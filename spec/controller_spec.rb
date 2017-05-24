@@ -61,6 +61,28 @@ module Blix::Rest
       t.render_erb("partial1", :layout=>"layout1").should == "the title is the page is selection page and hello joe is the content to you."
     end
     
+    it "should calculate the full_path" do
+      t = TestController.new
+      expect(t.full_path('/') ).to eq '/'
+      expect(t.full_path('') ).to eq '/'
+      expect(t.full_path('xxx') ).to eq '/xxx'
+      expect(t.full_path('/foo') ).to eq '/foo'
+      
+      RequestMapper.set_path_root('assets')
+      t = TestController.new
+      expect(t.full_path('/') ).to eq '/assets/'
+      expect(t.full_path('') ).to eq '/assets/'
+      expect(t.full_path('xxx') ).to eq '/assets/xxx'
+      expect(t.full_path('/foo') ).to eq '/assets/foo'
+      
+      RequestMapper.set_path_root('/assets/')
+      t = TestController.new
+      expect(t.full_path('/') ).to eq '/assets/'
+      expect(t.full_path('') ).to eq '/assets/'
+      expect(t.full_path('xxx') ).to eq '/assets/xxx'
+      expect(t.full_path('/foo') ).to eq '/assets/foo'
+    end
+    
   end
   
 end

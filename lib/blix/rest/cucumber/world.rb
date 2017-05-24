@@ -114,6 +114,27 @@ class RestWorld
     end
   end
   
+  ############################################## ALTERNATIVE FORM
+  def parse_params_XXXXXXX(json)
+    # replace any ids in the string
+    json.gsub( /[:|\[|,|\W]@([a-z0-9_\/\.]+)/) do |str|
+      #puts "SSSSSSSSSSSSTR=#{str}"
+      char = str[0,1]
+      str = str[2..-1]
+      if str=="password"
+        id = @current_user && @current_user.name + "@12345678"
+      elsif str[0,5] == "image"
+        data = File.read("resources/images" + str[5..-1])
+        id = data && Base64.strict_encode64(data)
+        #id = "12345"
+      else
+        id  = store[str]
+      end
+      raise ":#{str} has not been stored" unless id
+      "#{char}\"#{id}\""
+    end
+  end
+  
   def parse_body(json)
   
     json = json.dup
@@ -138,6 +159,12 @@ class RestWorld
     end
   end
   
+  def rack_request_headers
+    env = {}
+    env["REMOTE_ADDR"] = "10.0.0.1"
+    env
+  end
+  
   
   def send_request(verb,username,path,json)
     @_verb = verb
@@ -154,13 +181,13 @@ class RestWorld
     end
     case verb 
     when 'GET'
-      @_response = Response.new(@_srv.get(@_request))
+      @_response = Response.new(@_srv.get(@_request, rack_request_headers))
     when 'POST'
-      @_response = Response.new(@_srv.post(@_request, {:input=>@_body})) 
+      @_response = Response.new(@_srv.post(@_request, rack_request_headers.merge(:input=>@_body))) 
     when 'PUT'
-      @_response = Response.new(@_srv.put(@_request, {:input=>@_body})) 
+      @_response = Response.new(@_srv.put(@_request, rack_request_headers.merge(:input=>@_body))) 
     when 'DELETE'
-      @_response = Response.new(@_srv.delete(@_request, {:input=>@_body})) 
+      @_response = Response.new(@_srv.delete(@_request, rack_request_headers.merge(:input=>@_body))) 
     end
   end
   
@@ -173,28 +200,4 @@ World do
   RestWorld.new
 end
 
-# patch the validate token routine
-class Realbite::Rest::Provider
-  def validate_token(token)
-    parts = token.to_s.split('-')
-    if user=parts[1]
-      raise ServiceError.new(INVALID_TOKEN_MESSAGE,403) if user == "guest"
-      return  user
-    else
-      raise Realbite::Rest::ServiceError.new("invalid token",401)
-    end
-  end
-end
 
-# use the user login as the wid
-class Realbite::Rest::WebFrameService
-  
-  def self.configure(params={})
-    @_login = params[:login]
-    instance.configure(params)
-  end
-
-  def self.user_wid
-    @_login
-  end
-end

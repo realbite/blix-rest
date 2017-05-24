@@ -9,7 +9,7 @@ module Blix
     
     CONTENT_TYPE      = 'Content-Type'
     CONTENT_TYPE_JSON = 'application/json'
-    CONTENT_TYPE_HTML = 'text/html'
+    CONTENT_TYPE_HTML = 'text/html; charset=utf-8'
     CONTENT_TYPE_XML  = 'application/xml'
     AUTH_HEADER       = 'WWW-Authenticate'
     CACHE_CONTROL     = 'Cache-Control'

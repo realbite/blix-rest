@@ -14,7 +14,7 @@ module Blix::Rest
   # params       : all the params combined
   # user         : the user making this request ( or nil if 
   # format       : the format the response should be in :json or :html
-  #
+  # session      : the rack session if middleware has been used
   #
   #  to accept requests other thatn json then set :accept=>[:json,:html] as options in the route
   #    eg  post '/myform' :accept=>[:html]              # this will only accept html requests.
@@ -144,8 +144,19 @@ module Blix::Rest
       req.session
     end
     
+    # add on the root path
+    def full_path(path)
+      path = path[1..-1] if path[0,1] == '/'
+      RequestMapper.path_root + path
+    end
+    
+    # the full url of this path.
+    def full_url(path)
+      
+    end
+    
     def redirect(path, status=302)
-      raise ServiceError.new(nil,status,"Location"=>path)   
+      raise ServiceError.new(nil,status,"Location"=>full_path(path))   
     end
     
     def request_ip

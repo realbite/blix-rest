@@ -208,7 +208,7 @@ in features/support/world.rb .........
 
 class RestWorld
   
-  # add a hook to create the user in the supersite2 database - the wid is just equal to the user name.
+  # add a hook to create the user in the  database - 
   #
   def before_user_create(user,hash)
     name = hash["name"]

@@ -122,9 +122,14 @@ module Blix::Rest
       
       # match a given path to  declared route.
       def match(verb,path)
-        path = path[1..-1] if path[0,1] == PATH_SEP 
+        path = PATH_SEP + path if path[0,1] != PATH_SEP  # ensure a leading slash on path
+
         path = path[path_root_length..-1] if path_root_length.to_i > 0
-        return [nil,{}] if path == nil
+        if path
+           path = path[1..-1] if path[0,1] == PATH_SEP              # remove the leading slash
+        else
+           return [nil,{}]
+        end
         
         parts = path.split(PATH_SEP)
         current = table[verb]

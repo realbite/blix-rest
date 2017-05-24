@@ -153,7 +153,12 @@ module Blix::Rest
       RequestMapper.set_path_root("/a/b/c/")
       RequestMapper.process(GET,"/").should == nil
       RequestMapper.process(GET,"/a/b/c/").should == "list:{}"
+      RequestMapper.set_path_root("abc")
+      RequestMapper.path_root.should == "/abc/"
+      RequestMapper.process(GET,"abc").should == "list:{}"
     end
+    
+    
     
     it "should document the paths" do
       blk = lambda{|params| "list:#{params.to_s}"}

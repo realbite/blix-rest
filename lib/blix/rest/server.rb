@@ -121,7 +121,7 @@ module Blix::Rest
         rescue AuthorizationError=>e
           response.set(401,parser.format_error(e.to_s),{AUTH_HEADER=>'Basic realm="rest"'})
         rescue Exception=>e
-          response.set(406,parser.format_error("internal error"))
+          response.set(500,parser.format_error("internal error"))
           puts $!  # FIXME should go to logger
           puts $@  # FIXME should go to logger
         else # no error
