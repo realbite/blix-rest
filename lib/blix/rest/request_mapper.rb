@@ -215,6 +215,10 @@ module Blix::Rest
       
       
     end
+  end # RequestMapper
+  
+  def self.set_path_root(*args)
+     RequestMapper.set_path_root( *args )
   end
   
-end
+end # Rest

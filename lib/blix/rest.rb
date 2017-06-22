@@ -1,4 +1,5 @@
 require "base64"
+require "logger"
 
 module Blix
   module Rest
@@ -28,6 +29,14 @@ module Blix
     
     def self.environment=(val)
       @_environment = val.to_s
+    end
+    
+    def self.logger=(val)
+      @_logger = val
+    end
+    
+    def self.logger
+      @_logger ||= Logger.new(STDOUT)
     end
     
     class BinaryData < String

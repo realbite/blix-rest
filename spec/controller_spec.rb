@@ -19,6 +19,10 @@ module Blix::Rest
       
     end
     
+    def logmessage(msg)
+      logger.info msg
+    end
+    
   end
   
   describe Controller do
@@ -59,6 +63,29 @@ module Blix::Rest
       t.title = "selection page"
       #t.render_erb("layout1", :layout=>"layout1").should == "the title is hello joe to you."
       t.render_erb("partial1", :layout=>"layout1").should == "the title is the page is selection page and hello joe is the content to you."
+    end
+    
+    it "should log messages" do
+      file = Tempfile.new("LOGGER")
+      logger = Logger.new(file)
+      Blix::Rest.logger = logger
+      
+      t = TestController.new
+      t.logmessage("one")
+      t.logmessage("two")
+      t.logmessage("three")
+      logger.close
+      file.close
+      file.open
+      str = file.read
+      expect(str).to include "one"
+      expect(str).to include "two"
+      expect(str).to include "three"
+      
+      puts file.path
+      puts str
+      file.close
+      file.unlink
     end
     
     it "should calculate the full_path" do

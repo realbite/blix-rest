@@ -140,6 +140,8 @@ Blix::Rest::Controller
    redirect     : (path, status=302) redirect to another url.
    request_ip   : the ip of the request
    render_erb   : (template_name [,:layout=>name])
+   path_for     : (path) give the correct path for an internal path
+   url_for      : (path) give the full url for an internal path
   
   
     to accept requests other than json then set :accept=>[:json,:html] as options        in the route

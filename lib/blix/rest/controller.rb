@@ -29,6 +29,10 @@ module Blix::Rest
       @_env
     end
     
+    def logger
+      Blix::Rest.logger
+    end
+    
     def rack_env
       ENV['RACK_ENV'] 
     end
@@ -301,6 +305,14 @@ module Blix::Rest
       
     end
     
+  end
+  
+  def self.set_erb_root(*args)
+     Controller.set_erb_root( *args )
+  end
+  
+  def self.no_template_cache=(val)
+     Controller.no_template_cache=val
   end
   
 end
