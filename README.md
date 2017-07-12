@@ -270,7 +270,7 @@ This config file is stored in a config directory. The default is 'config/assets'
        end
        
     end
-```
+
 
 ### In your erb view
 
@@ -298,10 +298,11 @@ eg:
 
 #### NOTE ON ASSETS!!
 
-in production mode the compiled version of the assets will be used which will have a unique file name.
+In production mode the compiled version of the assets will be used which will have a unique file name.
+
 In production the expiry date of your assets can be set to far in the future to take advantage of cacheing.
 
 In development or test mode the standard name will be used which then will make use of your asset pipeline ( eg sprockets )
 
-asset names can contain only one extension. if there are more extensions eg: 'myfile.extra.css' then only the last 
+Asset names can contain only one extension. if there are more extensions eg: 'myfile.extra.css' then only the last 
 extension will be used: in this case the name will be simplified to 'myfile.css' !!!
