@@ -1,3 +1,4 @@
+# 0.1.18  - change homepage
 # 0.1.17  - add asset management
 # 0.1.16  - add a logger
 # 0.1.14  - change parsing of path with path_root
@@ -6,6 +7,6 @@
 
 module Blix
   module Rest
-    VERSION = "0.1.17"
+    VERSION = "0.1.18"
   end
 end

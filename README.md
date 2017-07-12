@@ -1,7 +1,7 @@
 INSTALLATION
 ------------------
 
-gem install blix_rest
+    gem install blix_rest
 
 CREATE A SIMPLE WEBSERVICE 
 ===========================
@@ -10,31 +10,32 @@ CREATE A SIMPLE WEBSERVICE
 put the following in config.ru
 --------------------------------
 
-require 'blix/rest'
-
-class HomeController < Blix::Rest::Controller
-
-     get '/hello', :accept=>[:html,:json] do
-        if format == :json
-          {"message"=>"hello world"}
-        else
-         "<h1>hello world</h1>"
-        end
-     end
-end
-
-run Blix::Rest::Server.new
+    require 'blix/rest'
+    
+    class HomeController < Blix::Rest::Controller
+    
+         get '/hello', :accept=>[:html,:json] do
+            if format == :json
+              {"message"=>"hello world"}
+            else
+             "<h1>hello world</h1>"
+            end
+         end
+    end
+    
+    run Blix::Rest::Server.new
 
 
 
 -------------------------------
-ruby -S rackup -p3000
 
-
-now go to browser ..
-
-http://localhost:3000/hello
-http://localhost:3000/hello.json
+    ruby -S rackup -p3000
+    
+    
+    now go to browser ..
+    
+    http://localhost:3000/hello
+    http://localhost:3000/hello.json
 
 NOTE ON PATHS
 ===================================================
@@ -85,39 +86,40 @@ Note that the format for a non standard (html/json/xml) request is only taken fr
 the extension part ( after the .) of the url ... eg 
   http://mydomain.com/mypage.jsonp will give a format of jsonp
 
-class MyParser < FormatParser
-    
-    def set_default_headers(headers)
-      headers[CACHE_CONTROL]= CACHE_NO_STORE 
-      headers[PRAGMA]       = NO_CACHE 
-      headers[CONTENT_TYPE] = CONTENT_TYPE_JSONP
+    class MyParser < FormatParser
+        
+        def set_default_headers(headers)
+          headers[CACHE_CONTROL]= CACHE_NO_STORE 
+          headers[PRAGMA]       = NO_CACHE 
+          headers[CONTENT_TYPE] = CONTENT_TYPE_JSONP
+        end
+        
+        def format_error(message)
+          message.to_s
+        end
+        
+        def format_response(value,response)
+          response.content = "<script>load(" +
+            MultiJson.dump( value) +
+            ")</script>"
+        end
     end
     
-    def format_error(message)
-      message.to_s
-    end
     
-    def format_response(value,response)
-      response.content = "<script>load(" +
-        MultiJson.dump( value) +
-        ")</script>"
-    end
-end
-
-
-s = Blix::Rest::Server.new
-s.register_parser(:jsonp,MyParser.new)
+    s = Blix::Rest::Server.new
+    s.register_parser(:jsonp,MyParser.new)
 
 Then in your controller accept that format..
 
-get "/details" :accept=>[:jsonp] do
-    {"id"=>12}
-end
+    get "/details" :accept=>[:jsonp] do
+        {"id"=>12}
+    end
 
 
 Controller
 ===============
-Blix::Rest::Controller  
+
+    Blix::Rest::Controller  
 
  base class for controllers. within your block handling a particular route you
  have access to a number of methods
@@ -150,9 +152,9 @@ Blix::Rest::Controller
 VIEWS
 =======
 
-Blix::Rest::Controller.set_erb_root ::File.expand_path('../lib/myapp/views',  __FILE__)
-
-render_erb( "users/index", :layout=>'layouts/main')
+    Blix::Rest::Controller.set_erb_root ::File.expand_path('../lib/myapp/views',  __FILE__)
+    
+    render_erb( "users/index", :layout=>'layouts/main')
 
 myapp
 -----
@@ -207,46 +209,29 @@ NOTE : if you need to set up your database with users then you can use the follo
 
 in features/support/world.rb .........
 
-class RestWorld
-  
-  # add a hook to create the user in the  database - 
-  #
-  def before_user_create(user,hash)
-    name = hash["name"]
-    u = MyUser.new
-    u.set(:user_wid, name)
-    u.set(:name,name)
-    u.set(:is_super,true) if hash["level"] == "super"
-    u.save
-    store["myuser_#{name}_id"] = u.id.to_s
-  end
-end
+    class RestWorld
+      
+      # add a hook to create the user in the  database - 
+      #
+      def before_user_create(user,hash)
+        name = hash["name"]
+        u = MyUser.new
+        u.set(:user_wid, name)
+        u.set(:name,name)
+        u.set(:is_super,true) if hash["level"] == "super"
+        u.save
+        store["myuser_#{name}_id"] = u.id.to_s
+      end
+    end
 
 now you can also use eg  :myuser_foo_id within a request path/json.
 
-Test Hooks
-===============
-before_user_create(user,hash)
 
-  user: the test internal user object
-     get /set the following ..
-
-      :pw
-      :name
-      :login
-      :email
-      :name
-      :email_is_verified 
-      :is_admin
-      :is_provider
-
-  hash: a hash of the table entries corresponding to the user as given 
-        in 'Given the following users exist:'
 
 Manage Assets
 =============
 
-require 'blix/assets'
+    require 'blix/assets'
 
 The asset manager stores a hash of the asset data and the current unique file suffix for each asset in its own file.
 This config file is stored in a config directory. The default is 'config/assets' but another location can be specified.
@@ -256,37 +241,37 @@ Blix::AssetManager.config_dir = "myassets/config/location"   # defaults to "conf
 Compile your assets
 -------------------
 
-......
-......
-ASSETS = ['admin.js', 'admin.css', 'standard.js']
-ASSETS.each do |name| 
-    
-   compiled_asset = environment[name].to_s
-   
-   Blix::AssetManager.if_modified(name,compiled_asset,:rewrite=>true) do |a|
-     
-     filename = File.join(ROOT,"public","assets",a.newname)
-     puts "writing #{name} to #{filename}"
-     File.write filename,compiled_asset
-     
-     File.unlink File.join(ROOT,"public","assets",a.oldname) if a.oldname
-   end
-   
-end
+    ......
+    ......
+    ASSETS = ['admin.js', 'admin.css', 'standard.js']
+    ASSETS.each do |name| 
+        
+       compiled_asset = environment[name].to_s
+       
+       Blix::AssetManager.if_modified(name,compiled_asset,:rewrite=>true) do |a|
+         
+         filename = File.join(ROOT,"public","assets",a.newname)
+         puts "writing #{name} to #{filename}"
+         File.write filename,compiled_asset
+         
+         File.unlink File.join(ROOT,"public","assets",a.oldname) if a.oldname
+       end
+       
+    end
 
 In your erb view
 ----------------------------
 
 eg:
 
-<script src="<%= asset_path('assets/standard.js') %>" type="text/javascript"></script>
+    <script src="<%= asset_path('assets/standard.js') %>" type="text/javascript"></script>
 
 or in your controller
 ---------------------------
 
 eg: 
 
-path = asset_path('assets/standard.js')
+    path = asset_path('assets/standard.js')
 
 
 NOTE ON ASSETS!!

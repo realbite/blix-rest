@@ -12,7 +12,7 @@ Fully extensible through RACK middleware and your own code]
   s.authors = ['Clive Andrews']
   s.license = 'MIT'
   s.email = ['gems@realitybites.eu']
-  s.homepage = 'http://www.realitybites.eu/'
+  s.homepage = 'https://github.com/realbite/blix-rest'
   
   
   s.add_dependency('httpclient',  '~> 0.0', '>= 0.0.0')
