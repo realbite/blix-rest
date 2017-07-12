@@ -164,8 +164,8 @@ eg  `post '/myform' :accept=>[:html]      # this will only accept html requests.
     render_erb( "users/index", :layout=>'layouts/main')
 
 
-myapp
------
+#### directory structure
+
      views
      -----
           users
