@@ -272,7 +272,7 @@ module Blix::Rest
       rescue Exception
         puts $!
         puts $@
-      "*** TEMPLATE ERROR ***"
+        "*** TEMPLATE ERROR ***"
       end
     end
     

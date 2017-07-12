@@ -1,0 +1,247 @@
+BLIX  - 0.1.16
+===================================================================================
+
+        require 'blix/rest'
+        
+        class InfoController < Blix::Rest::Controller
+             get '/info'do
+                  "hello"
+             end
+        end
+        
+        run Blix::Rest::Server.new
+
+rackup -p3000 --env production
+Puma starting in single mode...
+* Version 3.9.1 (ruby 2.3.3-p222), codename: Private Caller
+* Min threads: 5, max threads: 5
+* Environment: production
+* Listening on tcp://0.0.0.0:3000
+Use Ctrl-C to stop
+
+
+
+ab -n1000 http://localhost:3000/info.json
+This is ApacheBench, Version 2.3 <$Revision: 1528965 $>
+Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+Licensed to The Apache Software Foundation, http://www.apache.org/
+
+Benchmarking localhost (be patient)
+Completed 100 requests
+Completed 200 requests
+Completed 300 requests
+Completed 400 requests
+Completed 500 requests
+Completed 600 requests
+Completed 700 requests
+Completed 800 requests
+Completed 900 requests
+Completed 1000 requests
+Finished 1000 requests
+
+
+Server Software:        
+Server Hostname:        localhost
+Server Port:            3000
+
+Document Path:          /info.json
+Document Length:        25 bytes
+
+Concurrency Level:      1
+Time taken for tests:   0.331 seconds
+Complete requests:      1000
+Failed requests:        0
+Total transferred:      139000 bytes
+HTML transferred:       25000 bytes
+Requests per second:    3018.66 [#/sec] (mean)
+Time per request:       0.331 [ms] (mean)
+Time per request:       0.331 [ms] (mean, across all concurrent requests)
+Transfer rate:          409.76 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.0      0       0
+Processing:     0    0   0.1      0       1
+Waiting:        0    0   0.1      0       1
+Total:          0    0   0.1      0       1
+
+Percentage of the requests served within a certain time (ms)
+  50%      0
+  66%      0
+  75%      0
+  80%      0
+  90%      1
+  95%      1
+  98%      1
+  99%      1
+ 100%      1 (longest request)
+ 
+ RAILS - 5.1.2
+ ===================================================================================================
+ 
+         class InfoController < ApplicationController
+        
+           def show
+               render :json=>{:data=>"hello"}
+           end
+        
+         end
+         
+         Rails.application.routes.draw do
+          get '/info', to: 'info#show'
+        end
+ 
+ + edit config/secrets.yml
+ 
+ 
+rackup -p3000 --env production
+Puma starting in single mode...
+* Version 3.9.1 (ruby 2.3.3-p222), codename: Private Caller
+* Min threads: 5, max threads: 5
+* Environment: production
+* Listening on tcp://0.0.0.0:3000
+Use Ctrl-C to stop
+ 
+ 
+ ab -n1000 http://localhost:3000/info.json
+This is ApacheBench, Version 2.3 <$Revision: 1528965 $>
+Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+Licensed to The Apache Software Foundation, http://www.apache.org/
+
+Benchmarking localhost (be patient)
+Completed 100 requests
+Completed 200 requests
+Completed 300 requests
+Completed 400 requests
+Completed 500 requests
+Completed 600 requests
+Completed 700 requests
+Completed 800 requests
+Completed 900 requests
+Completed 1000 requests
+Finished 1000 requests
+
+
+Server Software:        
+Server Hostname:        localhost
+Server Port:            3000
+
+Document Path:          /info.json
+Document Length:        16 bytes
+
+Concurrency Level:      1
+Time taken for tests:   2.091 seconds
+Complete requests:      1000
+Failed requests:        0
+Total transferred:      346000 bytes
+HTML transferred:       16000 bytes
+Requests per second:    478.17 [#/sec] (mean)
+Time per request:       2.091 [ms] (mean)
+Time per request:       2.091 [ms] (mean, across all concurrent requests)
+Transfer rate:          161.57 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.0      0       0
+Processing:     1    2   0.8      2       9
+Waiting:        1    2   0.8      2       9
+Total:          1    2   0.8      2       9
+
+Percentage of the requests served within a certain time (ms)
+  50%      2
+  66%      2
+  75%      2
+  80%      2
+  90%      2
+  95%      5
+  98%      5
+  99%      5
+ 100%      9 (longest request)
+ 
+SINATRA - 2.0.0
+==================================================================================
+
+        require 'sinatra'
+        require 'json'
+        
+        class MyApp < Sinatra::Base
+            get '/info.json' do
+              content_type :json
+              { :data => 'hello' }.to_json
+            end
+        end
+        
+        
+        run MyApp
+
+
+rackup -p3000 --env production sinatra.ru
+Puma starting in single mode...
+* Version 3.9.1 (ruby 2.3.3-p222), codename: Private Caller
+* Min threads: 5, max threads: 5
+* Environment: production
+* Listening on tcp://0.0.0.0:3000
+Use Ctrl-C to stop
+
+ ab -n1000 http://localhost:3000/info.json
+This is ApacheBench, Version 2.3 <$Revision: 1528965 $>
+Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+Licensed to The Apache Software Foundation, http://www.apache.org/
+
+Benchmarking localhost (be patient)
+Completed 100 requests
+Completed 200 requests
+Completed 300 requests
+Completed 400 requests
+Completed 500 requests
+Completed 600 requests
+Completed 700 requests
+Completed 800 requests
+Completed 900 requests
+Completed 1000 requests
+Finished 1000 requests
+
+
+Server Software:        
+Server Hostname:        localhost
+Server Port:            3000
+
+Document Path:          /info.json
+Document Length:        16 bytes
+
+Concurrency Level:      1
+Time taken for tests:   0.752 seconds
+Complete requests:      1000
+Failed requests:        0
+Total transferred:      120000 bytes
+HTML transferred:       16000 bytes
+Requests per second:    1329.74 [#/sec] (mean)
+Time per request:       0.752 [ms] (mean)
+Time per request:       0.752 [ms] (mean, across all concurrent requests)
+Transfer rate:          155.83 [Kbytes/sec] received
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.0      0       0
+Processing:     0    1   0.3      1       3
+Waiting:        0    1   0.3      1       2
+Total:          0    1   0.3      1       3
+
+Percentage of the requests served within a certain time (ms)
+  50%      1
+  66%      1
+  75%      1
+  80%      1
+  90%      1
+  95%      1
+  98%      1
+  99%      1
+ 100%      3 (longest request)
+
+ 
+ RESULTS
+ =====================================
+ 
+ Rails    -- x 1       (478 req/s )
+ Sinatra  -- x 2.78    ( 1330  req/s )
+ Blix     -- x 6.31    ( 3018  req/s )

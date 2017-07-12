@@ -126,7 +126,6 @@ Blix::Rest::Controller
    verb         : the request method ( 'GET'/'POST' ..)
    req          : the rack request
    body         : the request body as a string
-   body_hash    : the request body as a hash constructed from json
    query_params : a hash of parameters as passed in the url as parameters
    path_params  : a hash of parameters constructed from variable parts of the path
    post_params  : a hash of parameters passed in the body of the request
@@ -244,3 +243,59 @@ before_user_create(user,hash)
   hash: a hash of the table entries corresponding to the user as given 
         in 'Given the following users exist:'
 
+Manage Assets
+=============
+
+require 'blix/assets'
+
+The asset manager stores a hash of the asset data and the current unique file suffix for each asset in its own file.
+This config file is stored in a config directory. The default is 'config/assets' but another location can be specified.
+ 
+Blix::AssetManager.config_dir = "myassets/config/location"   # defaults to "config/assets" 
+
+Compile your assets
+-------------------
+
+......
+......
+ASSETS = ['admin.js', 'admin.css', 'standard.js']
+ASSETS.each do |name| 
+    
+   compiled_asset = environment[name].to_s
+   
+   Blix::AssetManager.if_modified(name,compiled_asset,:rewrite=>true) do |a|
+     
+     filename = File.join(ROOT,"public","assets",a.newname)
+     puts "writing #{name} to #{filename}"
+     File.write filename,compiled_asset
+     
+     File.unlink File.join(ROOT,"public","assets",a.oldname) if a.oldname
+   end
+   
+end
+
+In your erb view
+----------------------------
+
+eg:
+
+<script src="<%= asset_path('assets/standard.js') %>" type="text/javascript"></script>
+
+or in your controller
+---------------------------
+
+eg: 
+
+path = asset_path('assets/standard.js')
+
+
+NOTE ON ASSETS!!
+----------------
+
+in production mode the compiled version of the assets will be used which will have a unique file name.
+In production the expiry date of your assets can be set to far in the future to take advantage of cacheing.
+
+In development or test mode the standard name will be used which then will make use of your asset pipeline ( eg sprockets )
+
+asset names can contain only one extension. if there are more extensions eg: 'myfile.extra.css' then only the last 
+extension will be used: in this case the name will be simplified to 'myfile.css' !!!

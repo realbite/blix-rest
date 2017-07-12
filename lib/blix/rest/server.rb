@@ -99,19 +99,11 @@ module Blix::Rest
         return [406,{},["Invalid Format: #{format}"]]
       end
       
-      #headers     = {}
       response = Response.new
       
       parser.set_default_headers(response.headers)
       
       if blk
-        
-        # parse the request parameters here
-        #        begin
-        #          env['params'],env['post_params'],env['body'] = retrieve_params(env)
-        #        rescue
-        #          return [406, headers, [format_error("Invalid Request Format", format)]]
-        #        end
         
         begin
           params = env['params']
