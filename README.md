@@ -1,9 +1,9 @@
-##INSTALLATION
+## INSTALLATION
 
     gem install blix_rest
 
 
-##CREATE A SIMPLE WEBSERVICE 
+## CREATE A SIMPLE WEBSERVICE 
 
 #### put the following in config.ru
 
@@ -39,7 +39,7 @@ or
 
 `http://localhost:3000/hello.json`
 
-##NOTE ON PATHS
+## NOTE ON PATHS
 
 `get '/user/:user_id/list`
 
@@ -57,7 +57,7 @@ if there is a more specific path then it will be used first :
 
 
 
-##GENERATE AN ERROR RESPONSE
+## GENERATE AN ERROR RESPONSE
 
 raise a ServiceError within your controller code.
 
@@ -67,7 +67,7 @@ or for standard headers and status 406 just ..
 
 `raise Blix::Rest::ServiceError, "my error message"` 
 
-##HEADERS && STATUS
+## HEADERS && STATUS
 
 add special headers to your response with eg:
    
@@ -77,7 +77,7 @@ change the status of a success response with eg:
 
 `set_status(401)` 
 
-##REQUEST FORMAT
+## REQUEST FORMAT
 
 you can provide custom responses to a request format by registering a format parser
 for that format. you can also override the standard html,json or xml behavior.
@@ -120,7 +120,7 @@ Then in your controller accept that format..
     end
 
 
-##Controller
+## Controller
 
     Blix::Rest::Controller  
 
@@ -154,7 +154,7 @@ to accept requests other than json then set `:accept=>[:json,:html]` as options 
 eg  `post '/myform' :accept=>[:html]      # this will only accept html requests.`
   
 
-##VIEWS
+## VIEWS
 
 
     Blix::Rest.set_erb_root ::File.expand_path('../lib/myapp/views',  __FILE__)
@@ -176,7 +176,7 @@ myapp
                main.html.erb
 
 
-##Testing a Service with cucumber
+## Testing a Service with cucumber
 
 
 in features/support/setup.rb
@@ -236,7 +236,7 @@ now you can also use eg  `:myuser_foo_id` within a request path/json.
 
 
 
-#Manage Assets
+## Manage Assets
 
 
     require 'blix/assets'
@@ -249,7 +249,7 @@ This config file is stored in a config directory. The default is 'config/assets'
     Blix::AssetManager.config_dir = "myassets/config/location"   # defaults to `"config/assets" 
 
 
-##Compile your assets
+### Compile your assets
 
     require 'blix/assets'
   
@@ -272,8 +272,8 @@ This config file is stored in a config directory. The default is 'config/assets'
     end
 ```
 
-In your erb view
-----------------------------
+### In your erb view
+
 
 eg:
 
@@ -284,8 +284,7 @@ eg:
     <script src="<%= asset_path('assets/standard.js') %>" type="text/javascript"></script>
 
 
-or in your controller
----------------------------
+### or in your controller
 
 eg: 
 
@@ -297,7 +296,7 @@ eg:
 
 
 
-####NOTE ON ASSETS!!
+#### NOTE ON ASSETS!!
 
 in production mode the compiled version of the assets will be used which will have a unique file name.
 In production the expiry date of your assets can be set to far in the future to take advantage of cacheing.
