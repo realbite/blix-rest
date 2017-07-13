@@ -15,11 +15,11 @@ Fully extensible through RACK middleware and your own code]
   s.homepage = 'https://github.com/realbite/blix-rest'
   
   
-  s.add_dependency('httpclient',  '~> 0.0', '>= 0.0.0')
-  s.add_dependency('multi_json',  '~> 0.0', '>= 0.0.0')
-  s.add_dependency('rack',  '~> 0.0', '>= 0.0.0')
+  s.add_dependency('httpclient')
+  s.add_dependency('multi_json')
+  s.add_dependency('rack')
   
-  s.add_development_dependency('rspec',  '~> 0.0', '>= 0.0.0')
+  s.add_development_dependency('rspec')
  
   s.files = FileList['lib/blix/rest/**/*.rb','lib/blix/assets/**/*.rb' ].to_a
   s.files << 'lib/blix/rest.rb'

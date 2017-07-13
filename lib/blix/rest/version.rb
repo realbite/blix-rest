@@ -1,3 +1,4 @@
+# 0.1.19  - remove dep versions
 # 0.1.18  - change homepage
 # 0.1.17  - add asset management
 # 0.1.16  - add a logger
@@ -7,6 +8,6 @@
 
 module Blix
   module Rest
-    VERSION = "0.1.18"
+    VERSION = "0.1.19"
   end
 end
