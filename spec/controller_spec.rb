@@ -56,6 +56,13 @@ module Blix::Rest
       t.render_erb("partial1").should == "the page is selection page and hello joe is the content"
     end
     
+    it "should render with locals" do
+      Controller.set_erb_root File.expand_path File.join( File.dirname(__FILE__),'../resources')
+      t = TestController.new
+      #t.render_erb("layout1", :layout=>"layout1").should == "the title is hello joe to you."
+      t.render_erb("partial2", :locals=>{:name=>"joe",:title => "selection page"}).should == "the page is selection page and hello joe is the content"
+    end
+    
     it "should render a partial within a layout" do
       Controller.set_erb_root File.expand_path File.join( File.dirname(__FILE__),'../resources')
       t = TestController.new

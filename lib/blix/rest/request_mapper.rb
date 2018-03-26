@@ -17,7 +17,6 @@ module Blix::Rest
       attr_reader   :parameter
       
       def initialize(name)
-        
         @children = {}
         if name[0,1] == ':'
           @parameter = name[1..-1].to_sym

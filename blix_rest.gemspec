@@ -2,7 +2,7 @@ require 'rake'
 require './lib/blix/rest/version'
 
 Gem::Specification.new do |s|
-  s.name = 'blix_rest'
+  s.name = 'blix-rest'
   s.description = %Q[Rack based framework focused on building JSON REST web services.
 Concentrates on making the basics very easy to write and fast to execute.
 Fully extensible through RACK middleware and your own code]
@@ -21,9 +21,8 @@ Fully extensible through RACK middleware and your own code]
   
   s.add_development_dependency('rspec')
  
-  s.files = FileList['lib/blix/rest/**/*.rb','lib/blix/assets/**/*.rb' ].to_a
+  s.files = FileList['lib/blix/rest/**/*.rb' ].to_a
   s.files << 'lib/blix/rest.rb'
-  s.files << 'lib/blix/assets.rb'
   s.files << 'LICENSE'
   s.files << 'README.md'
 

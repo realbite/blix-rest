@@ -1,6 +1,6 @@
 ## INSTALLATION
 
-    gem install blix_rest
+    gem install blix-rest
 
 
 ## CREATE A SIMPLE WEBSERVICE 
@@ -128,25 +128,28 @@ base class for controllers. within your block handling a particular route you
 have access to a number of methods
 
     
-    env          : the request environment hash
-    verb         : the request method ( 'GET'/'POST' ..)
-    req          : the rack request
-    body         : the request body as a string
-    query_params : a hash of parameters as passed in the url as parameters
-    path_params  : a hash of parameters constructed from variable parts of the path
-    post_params  : a hash of parameters passed in the body of the request
-    params       : all the params combined
-    user         : the user making this request ( or nil if 
-    format       : the format the response should be in :json or :html
-    before       : before hook ( opts ) - remember to add 'super' as first line !!!
-    after        : after hook (opts,response)- remember to add 'super' as first line !!!
-    proxy        : forward the call to another service (service,path, opts={}) , :include_query=>true/false
-    session      : req.session
-    redirect     : (path, status=302) redirect to another url.
-    request_ip   : the ip of the request
-    render_erb   : (template_name [,:layout=>name])
-    path_for     : (path) give the correct path for an internal path
-    url_for      : (path) give the full url for an internal path
+    env            : the request environment hash
+    verb           : the request method ( 'GET'/'POST' ..)
+    req            : the rack request
+    body           : the request body as a string
+    query_params   : a hash of parameters as passed in the url as parameters
+    path_params    : a hash of parameters constructed from variable parts of the path
+    post_params    : a hash of parameters passed in the body of the request
+    params         : all the params combined
+    user           : the user making this request ( or nil if 
+    format         : the format the response should be in :json or :html
+    before         : before hook ( opts ) - remember to add 'super' as first line !!!
+    after          : after hook (opts,response)- remember to add 'super' as first line !!!
+    proxy          : forward the call to another service (service,path, opts={}) , :include_query=>true/false
+    session        : req.session
+    redirect       : (path, status=302) redirect to another url.
+    request_ip     : the ip of the request
+    render_erb     : (template_name [,:layout=>name])
+    path_for       : (path) give the correct path for an internal path
+    url_for        : (path) give the full url for an internal path
+    h              : escape html string to avoid XSS
+    escape_javascript : escape  a javascript string
+    server_options : options as passed to server at create time
   
   
 to accept requests other than json then set `:accept=>[:json,:html]` as options        in the route
@@ -161,7 +164,9 @@ eg  `post '/myform' :accept=>[:html]      # this will only accept html requests.
 
 
   
-    render_erb( "users/index", :layout=>'layouts/main')
+    render_erb( "users/index", :layout=>'layouts/main', :locals=>{:name=>"charles"})
+    
+    ( locals work from ruby 2.1 )
 
 
 #### directory structure

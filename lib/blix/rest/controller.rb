@@ -19,6 +19,20 @@ module Blix::Rest
   #  to accept requests other thatn json then set :accept=>[:json,:html] as options in the route
   #    eg  post '/myform' :accept=>[:html]              # this will only accept html requests.
   
+  class HashBinding
+    
+     def initialize(hash)
+          @hash = hash
+     end
+     
+     def _get_binding
+       b = binding
+       @hash.each{|k,v| b.local_variable_set(k,v)}
+       b
+     end
+       
+  end
+  
   
   class Controller
     
@@ -27,6 +41,11 @@ module Blix::Rest
     #--------------------------------------------------------------------------------------------------------
     def env
       @_env
+    end
+    
+    # options that were passed to the server at create time.
+    def server_options
+      @_server_options
     end
     
     def logger
@@ -172,6 +191,10 @@ module Blix::Rest
       Controller.render_erb(template_name,self,opts)
     end
     
+    def render(text,opts={})
+      Controller.render_erb(text,self,opts)
+    end
+    
     def _get_binding
       binding
     end
@@ -201,6 +224,33 @@ module Blix::Rest
       @_response.headers.merge!(headers)
     end
     
+    # the following is copied from Rack::Utils
+    ESCAPE_HTML = {
+      "&" => "&amp;",
+      "<" => "&lt;",
+      ">" => "&gt;",
+      "'" => "&#x27;",
+      '"' => "&quot;",
+      "/" => "&#x2F;"
+    }
+    
+    JS_ESCAPE_MAP   =   { '\\' => '\\\\', "</" => '<\/', "\r\n" => '\n', "\n" => '\n', "\r" => '\n', '"' => '\\"', "'" => "\\'" }
+
+    ESCAPE_HTML_PATTERN = Regexp.union(*ESCAPE_HTML.keys)
+
+    # Escape ampersands, brackets and quotes to their HTML/XML entities.
+    def h(string)
+      string.to_s.gsub(ESCAPE_HTML_PATTERN){|c| ESCAPE_HTML[c] }
+    end
+ 
+    # escape javascript
+    def escape_javascript(javascript)
+      if javascript
+         javascript.gsub(/(\|<\/|\r\n|\342\200\250|\342\200\251|[\n\r"'])/u) { |match| JS_ESCAPE_MAP[match] }
+      else
+         ""
+      end
+    end
     #----------------------------------------------------------------------------------------------------------
     # template methods that can be overwritten
     
@@ -217,7 +267,7 @@ module Blix::Rest
     
     #----------------------------------------------------------------------------------------------------------
     
-    def initialize(path_params,params,req,format,verb,response)
+    def initialize(path_params,params,req,format,verb,response,server_options)
       @_req = req
       @_env = req.env
       @_query_params = StringHash.new.merge(req.GET)
@@ -225,6 +275,7 @@ module Blix::Rest
       @_format = format
       @_verb = verb
       @_response = response
+      @_server_options = server_options
     end
     
     def Controller.no_template_cache
@@ -248,8 +299,33 @@ module Blix::Rest
       @_erb_root || raise( "set_erb_root must be set on the Rest::Controller to use erb")
     end
     
-    def Controller.render_erb(name,context,opts={})
+    # render a string within a layout.
+    def Controller.render(text,context,opts={})
       layout_name = opts[:layout]
+      
+      layout =  layout_name && if no_template_cache
+        ERB.new( File.read(File.join(erb_root, layout_name + ".html.erb")))
+      else
+        erb_templates[layout_name] ||= ERB.new( File.read(File.join(erb_root, layout_name + ".html.erb")))
+      end
+      
+      begin
+        if layout
+          layout.result(context._get_binding{|*args| text })
+        else
+          text
+        end
+      rescue Exception
+        puts $!
+        puts $@
+        "*** TEMPLATE ERROR ***"
+      end
+    end
+    
+    def Controller.render_erb(name,context,opts={})
+      name        = name.to_s
+      layout_name = opts[:layout]
+      locals      = opts[:locals]
       
       layout =  layout_name && if no_template_cache
         ERB.new( File.read(File.join(erb_root, layout_name + ".html.erb")))
@@ -267,7 +343,9 @@ module Blix::Rest
         if layout
           layout.result(context._get_binding{|*args| erb.result(context._get_binding)})
         else
-          erb.result(context._get_binding)
+           bind = context._get_binding
+           locals.each{|k,v| bind.local_variable_set(k,v)} if locals
+           erb.result(bind)
         end
       rescue Exception
         puts $!
@@ -287,9 +365,9 @@ module Blix::Rest
       end
       
       def route( verb ,path, opts = {}, &blk)
-        proc = lambda do |_path_params,_params,_req,_format,_response | 
+        proc = lambda do |_path_params,_params,_req,_format,_response,server_options | 
           self.check_format(opts[:accept],_format)
-          app = self.new(_path_params,_params,_req,_format,verb,_response)
+          app = self.new(_path_params,_params,_req,_format,verb,_response,server_options)
           app.before(opts)
           response = app.instance_eval &blk
           app.after(opts,response)

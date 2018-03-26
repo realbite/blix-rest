@@ -1,0 +1,52 @@
+ blix
+ ====================================================================
+ 
+ $ RACK_ENV=production bundle exec puma -t 1:16 -w 4 --preload
+ 
+ $wrk -t4 -c100 "http://127.0.0.1:9292/showdown.html"
+Running 10s test @ http://127.0.0.1:9292/showdown.html
+  4 threads and 100 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     9.70ms   13.72ms 123.72ms   85.60%
+    Req/Sec     1.90k     1.08k    4.11k    50.50%
+  75832 requests in 10.10s, 152.45MB read
+Requests/sec:   7508.54
+Transfer/sec:     15.09MB
+
+ $ wrk -t4 -c100 -d30 "http://127.0.0.1:9292/showdown.html"
+Running 30s test @ http://127.0.0.1:9292/showdown.html
+  4 threads and 100 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     9.34ms   13.64ms 214.43ms   86.14%
+    Req/Sec     2.54k   705.93     3.87k    56.33%
+  227278 requests in 30.04s, 456.91MB read
+Requests/sec:   7566.61
+Transfer/sec:     15.21MB
+
+
+
+sinatra
+=====================================================================
+$ RACK_ENV=production bundle exec puma -t 1:16 -w 4 --preload
+
+$ wrk -t4 -c100 "http://127.0.0.1:9292/showdown.html"
+
+Running 10s test @ http://127.0.0.1:9292/showdown.html
+  4 threads and 100 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency     8.85ms   10.23ms 126.37ms   85.22%
+    Req/Sec     1.41k     0.97k    2.89k    51.00%
+  56145 requests in 10.01s, 116.08MB read
+Requests/sec:   5607.56
+Transfer/sec:     11.59MB
+
+
+ $ wrk -t4 -c100 -d30 "http://127.0.0.1:9292/showdown.html"
+Running 30s test @ http://127.0.0.1:9292/showdown.html
+  4 threads and 100 connections
+  Thread Stats   Avg      Stdev     Max   +/- Stdev
+    Latency    11.99ms   15.34ms 158.49ms   85.38%
+    Req/Sec     1.57k   830.40     3.01k    67.92%
+  188089 requests in 30.02s, 388.89MB read
+Requests/sec:   6266.05
+Transfer/sec:     12.96MB

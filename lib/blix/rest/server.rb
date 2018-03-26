@@ -8,6 +8,7 @@ module Blix::Rest
       @_parsers["html"]  ||= HtmlFormatParser.new
       @_parsers["json"]  ||= JsonFormatParser.new
       @_parsers["xml"]   ||= XmlFormatParser.new
+      @_options = opts
     end
     
     def extract_parsers_from_options(opts)
@@ -107,7 +108,7 @@ module Blix::Rest
         
         begin
           params = env['params']
-          value  = blk.call(path_params,params,req,format,response)
+          value  = blk.call(path_params,params,req,format,response,@_options)
         rescue ServiceError=>e
           response.set(e.status,parser.format_error(e.message),e.headers)
         rescue AuthorizationError=>e

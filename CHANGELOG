@@ -1,0 +1,9 @@
+# 0.1.21  - allow locals to be passed to render_erb ( Ruby 2.1 )
+# 0.1.20  - add server_options to controller / h / escape_javascript
+# 0.1.19  - remove dep versions
+# 0.1.18  - change homepage
+# 0.1.17  - add asset management
+# 0.1.16  - add a logger
+# 0.1.14  - change parsing of path with path_root
+# 0.1.13  - allow cucumber to check a hash in a response field as JSON
+# 0.1.7 - add cucumber steps 
