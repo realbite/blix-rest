@@ -19,21 +19,7 @@ module Blix::Rest
   #  to accept requests other thatn json then set :accept=>[:json,:html] as options in the route
   #    eg  post '/myform' :accept=>[:html]              # this will only accept html requests.
   
-  class HashBinding
-    
-     def initialize(hash)
-          @hash = hash
-     end
-     
-     def _get_binding
-       b = binding
-       @hash.each{|k,v| b.local_variable_set(k,v)}
-       b
-     end
-       
-  end
-  
-  
+ 
   class Controller
     
     #--------------------------------------------------------------------------------------------------------
@@ -340,11 +326,11 @@ module Blix::Rest
       end
       
       begin
+        bind = context._get_binding
+        locals.each{|k,v| bind.local_variable_set(k,v)} if locals  # works from ruby 2.1
         if layout
-          layout.result(context._get_binding{|*args| erb.result(context._get_binding)})
+          layout.result(context._get_binding{|*args| erb.result(bind)})
         else
-           bind = context._get_binding
-           locals.each{|k,v| bind.local_variable_set(k,v)} if locals
            erb.result(bind)
         end
       rescue Exception
