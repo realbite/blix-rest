@@ -1,3 +1,7 @@
+# 0.1.25  - add all verb to controller  13/7/2018
+# 0.1.24  - add default format option for route.
+# 0.1.23  - move full_path method to request mapper
+# 0.1.22  - update cucumber expectations to new expect form / add blix/utils
 # 0.1.21  - allow locals to be passed to render_erb ( Ruby 2.1 )
 # 0.1.20  - add server_options to controller / h / escape_javascript
 # 0.1.19  - remove dep versions
@@ -6,4 +10,4 @@
 # 0.1.16  - add a logger
 # 0.1.14  - change parsing of path with path_root
 # 0.1.13  - allow cucumber to check a hash in a response field as JSON
-# 0.1.7 - add cucumber steps 
+# 0.1.7   - add cucumber steps 

@@ -99,14 +99,14 @@ class RestWorld
   
     before_parse_path(path)
     
-    path = path.gsub /\/(:[a-z0-9_]+)/ do |str|
+    path = path.gsub /\/(@[a-z0-9_]+)/ do |str|
       str = str[2..-1]
       id  = store[str]
       raise ":#{str} has not been stored" unless id
       "/#{id}"
     end
     # and the query part
-    path.gsub /\=(:[a-z0-9_]+)/ do |str|
+    path.gsub /\=(@[a-z0-9_]+)/ do |str|
       str = str[2..-1]
       id  = store[str]
       raise ":#{str} has not been stored" unless id
@@ -140,7 +140,7 @@ class RestWorld
     json = json.dup
     
     before_parse_body(json)
-    json.gsub /::([a-z0-9_]+)/ do |str|
+    json.gsub /:@([a-z0-9_]+)/ do |str|
       str = str[2..-1]
       id  = store[str]
       raise ":#{str} has not been stored" unless id

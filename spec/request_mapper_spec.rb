@@ -34,24 +34,24 @@ module Blix::Rest
       blk = lambda{"hello there"}
       RequestMapper.add_path("GET","/welcome",{:foo=>:bar},&blk)
       
-      RequestMapper.match(GET,"").should == [nil,{}]
-      RequestMapper.match(GET,"/").should == [nil,{}]
-      RequestMapper.match(GET,"/xxx").should == [nil,{}]
-      RequestMapper.match(GET,"/welcome").should == [blk,{}]
+      RequestMapper.match(GET,"").should == [nil,{},nil]
+      RequestMapper.match(GET,"/").should == [nil,{},nil]
+      RequestMapper.match(GET,"/xxx").should == [nil,{},nil]
+      RequestMapper.match(GET,"/welcome").should == [blk,{},{:foo=>:bar}]
       RequestMapper.match(GET,"/welcome")[0].call.should == "hello there"
-      RequestMapper.match(POST,"/welcome").should == [nil,{}]
+      RequestMapper.match(POST,"/welcome").should == [nil,{},nil]
     end
     
     it "should parse a path with a variable" do
       blk = lambda{|params| "item:#{params[:id]}"}
      
       RequestMapper.add_path(GET,"/products/:id",{},&blk)
-      RequestMapper.match(GET,"/products").should == [nil,{}]
-      RequestMapper.match(GET,"/products/").should == [nil,{}]
-      RequestMapper.match(GET,"/products/xxx").should == [blk,{"id"=>"xxx"}]
+      RequestMapper.match(GET,"/products").should == [nil,{},nil]
+      RequestMapper.match(GET,"/products/").should == [nil,{},nil]
+      RequestMapper.match(GET,"/products/xxx").should == [blk,{"id"=>"xxx"},{}]
       RequestMapper.process(GET,"/products/xxx").should == "item:xxx"
-      RequestMapper.match(GET,"/other/").should == [nil,{}]
-      RequestMapper.match(POST,"/products/xxx").should == [nil,{}]
+      RequestMapper.match(GET,"/other/").should == [nil,{},nil]
+      RequestMapper.match(POST,"/products/xxx").should == [nil,{},nil]
     end
     
     it "should parse a path with multiple variables" do
@@ -125,6 +125,11 @@ module Blix::Rest
       RequestMapper.process(GET,"/products/1234/user.json").should == 'list:{"prod_id"=>"1234", "format"=>:json}'
       RequestMapper.process(GET,"/products.html/1234/user.xxx").should == 'list:{"prod_id"=>"1234", "format"=>:xxx}'
       RequestMapper.process(GET,"/products.html/1234/user.jsonx").should == 'list:{"prod_id"=>"1234", "format"=>:jsonx}'
+      
+      RequestMapper.add_path(GET,"/others/:other_id/*",{},&blk)
+      RequestMapper.process(GET,"/others/1234/other").should == 'list:{"other_id"=>"1234", "wildpath"=>"/other"}'
+      RequestMapper.process(GET,"/others/1234/other.json").should == 'list:{"other_id"=>"1234", "format"=>:json, "wildpath"=>"/other"}'
+      
     end
     
     it "should set the path root" do
@@ -197,6 +202,7 @@ module Blix::Rest
       RequestMapper.process(GET,"/aaa/aaa").should == "list:{}"
       RequestMapper.process(GET,"/zzz/yyyy/xxx").should == 'list:{"wildpath"=>"/zzz/yyyy/xxx"}'
     end
+    
     
     
   end

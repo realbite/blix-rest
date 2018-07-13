@@ -20,7 +20,9 @@ module Blix
     URL_ENCODED       = %r{^application/x-www-form-urlencoded}
     JSON_ENCODED      = %r{^application/json} # NOTE: "text/json" and "text/javascript" are deprecated forms
     HTML_ENCODED      = %r{^text/html}
-    XML_ENCODED      =  %r{^application/xml}
+    XML_ENCODED       =  %r{^application/xml}
+    
+    HTTP_DATE_FORMAT  = "%a, %d %b %Y %H:%M:%S GMT"
     
     # the test/development/production environment
     def self.environment
@@ -79,7 +81,6 @@ require 'multi_json'
 require 'logger'
 require 'blix/rest/version'
 require 'blix/rest/string_hash'
-
 
 # client classes
 require 'blix/rest/remote_service'

@@ -15,16 +15,16 @@ Given(/^user (.*?) puts ["'](.*?)["'] with (.*?)$/) do |user, path, json|
 end
 
 Then(/^the status should be (\d+)$/) do |code|
-  expect(valid_response.status).to eq code.to_i
+  valid_response.status.should == code.to_i
 end
 
 Then(/^there should be an error$/) do
   valid_response.status.to_s[0,1].should_not == '2'
-  expect(valid_response.error).to_not be nil
+  valid_response.error.should_not == nil
 end
 
 Then(/^the error message should include ["'](.*?)["']$/) do |field|
-  expect(valid_response.error && (valid_response.error =~ %r/#{field}/)).to_not be nil
+  (valid_response.error && (valid_response.error =~ %r/#{field}/)).should_not == nil
 end
 
 Given(/^explain$/) do
@@ -35,24 +35,16 @@ end
 
 Then(/^the data type should be ["'](.*?)["']$/) do |type|
   if valid_response.data.kind_of? Array
-    expect(valid_response.data[0]["_type"]).to eq type
+    valid_response.data[0]["_type"].should == type
   else
-    expect(valid_response.data["_type"]).to eq type
+    valid_response.data["_type"].should == type
   end
 end
 
 
 Then(/^the data length should be (\d+)$/) do |len|
   if valid_response.data.kind_of? Array
-    expect(valid_response.data.length).to eq len.to_i
-  else
-    1
-  end
-end
-
-Then(/^the data length should equal (\d+)$/) do |len|
-  if valid_response.data.kind_of? Array
-    expect(valid_response.data.length).to eq len.to_i
+    valid_response.data.length.should == len.to_i
   else
     1
   end
@@ -66,12 +58,12 @@ Then(/^the data "(.*?)" should == (.*?)$/) do |field,val|
   end
   v = data[field].to_s
   
-  if val =~ %r{^@([^@]*)$}
-     expect(v).to eq store[$1].to_s
+  if val =~ %r{^:([^:]*)$}
+     v.should == store[$1].to_s
   elsif val =~ %r{^(::)?[A-Z][A-z_a-z:]*$}
-     expect(v).to eq Module.const_get(val).to_s
+     v.should == Module.const_get(val).to_s
   elsif val =~ %r{^['"](.*)['"]$}
-     expect(v).to eq $1
+     v.should == $1
   end
   
 end
@@ -82,7 +74,7 @@ Then(/^the data "(.*?)" should equal ["'](.*?)["']$/) do |field,val|
   else
     data = valid_response.data
   end
-  expect(data[field].to_s).to eq val
+  data[field].to_s.should == val
 end
 
 Then(/^the data ["'](.*?)["'] should == nil$/) do |field|
@@ -91,7 +83,7 @@ Then(/^the data ["'](.*?)["'] should == nil$/) do |field|
   else
     data = valid_response.data
   end
-  expect(data[field]).to be nil
+  data[field].should == nil
 end
 
 Then(/^the data ["'](.*?)["'] should equal nil$/) do |field|
@@ -100,7 +92,7 @@ Then(/^the data ["'](.*?)["'] should equal nil$/) do |field|
   else
     data =valid_response.data
   end
-  expect(data[field]).to be nil
+  data[field].should == nil
 end
 
 
@@ -112,9 +104,9 @@ Then(/^the data should( not)? include ["'](.*?)["']$/) do |state, field|
     data = valid_response.data
   end
   if state == " not"
-     expect(data.key?(field)).to eq false
+     data.key?(field).should == false
   else
-     expect(data.key?(field)).to eq true
+     data.key?(field).should == true
   end
 end
 

@@ -54,6 +54,11 @@ module Blix::Rest
         @path_root_length
       end
       
+      def full_path(path)
+        path = path[1..-1] if path[0,1] == '/'
+        path_root + path
+      end
+      
       def locations
         @locations ||= Hash.new {|h,k| h[k] = []}
       end
@@ -106,7 +111,7 @@ module Blix::Rest
               current = current[node.value]
             end
             current.blk = blk
-            current.opts = opts
+            current.opts = opts || {}
           end
         end
         @table
@@ -127,7 +132,7 @@ module Blix::Rest
         if path
            path = path[1..-1] if path[0,1] == PATH_SEP              # remove the leading slash
         else
-           return [nil,{}]
+           return [nil,{},nil]
         end
         
         parts = path.split(PATH_SEP)
@@ -136,7 +141,7 @@ module Blix::Rest
         parameters = StringHash.new
         # handle the root node here
         if path==""
-          return  [current.blk,parameters]
+          return  [current.blk,parameters,current.opts]
         end
         
         parts.each_with_index do |section,idx|
@@ -150,28 +155,28 @@ module Blix::Rest
           
           if current
             if idx == limit # the last section
-              return  [current.blk,parameters]
+              return  [current.blk,parameters,current.opts]
             end
           else
             current = last[WILD_PLACEHOLDER]
             if current
               parameters[current.parameter.to_s] = section
               if idx == limit # the last section
-                return [current.blk,parameters]
+                return [current.blk,parameters,current.opts]
               end
             else
               # 
               current = last[STAR_PLACEHOLDER]
               if current
                 parameters['wildpath'] = '/' + parts[idx..-1].join('/')
-                return [current.blk,parameters]
+                return [current.blk,parameters,current.opts]
               else
-                return [nil,{}]
+                return [nil,{},nil]
               end
             end
           end
         end
-        return [nil,{}]
+        return [nil,{},nil]
       end
       
       # match a path to a route and call any associated block with the extracted parameters.
@@ -201,7 +206,7 @@ module Blix::Rest
         str = ""
         list.each do |route|
           pairs = route[1]
-          ['GET','POST','PUT','DELETE'].each do |verb|
+          ['GET','POST','PUT','DELETE','ALL'].each do |verb|
             if route[1].key? verb
               str << verb << "\t" << route[0] << route[1][verb] << "\n"
             end

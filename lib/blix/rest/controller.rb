@@ -155,8 +155,7 @@ module Blix::Rest
     
     # add on the root path
     def full_path(path)
-      path = path[1..-1] if path[0,1] == '/'
-      RequestMapper.path_root + path
+      RequestMapper.full_path(path)
     end
     
     # the full url of this path.
@@ -345,6 +344,7 @@ module Blix::Rest
 
       def check_format(accept,format)
         return if (format==:json) && (accept==nil)  # the majority of cases
+        return if (format==:_) && (accept==nil)     # assume json by default.
         accept ||= :json
         accept = [accept].flatten
         raise ServiceError,"invalid format for this request" unless accept.index format
@@ -366,7 +366,8 @@ module Blix::Rest
       def post(*a, &b) route 'POST', *a, &b end
       def put(*a, &b) route 'PUT', *a, &b end
       def delete(*a, &b) route 'DELETE', *a, &b end
-      
+      def all(*a, &b) route 'ALL', *a, &b end
+        
     end
     
   end

@@ -12,7 +12,7 @@
     
     class HomeController < Blix::Rest::Controller
     
-         get '/hello', :accept=>[:html,:json] do
+         get '/hello', :accept=>[:html,:json], :default=>:html do
             if format == :json
               {"message"=>"hello world"}
             else
@@ -77,6 +77,16 @@ change the status of a success response with eg:
 
 `set_status(401)` 
 
+## BASIC AUTH
+
+in controller..
+
+    login,password = get_basic_auth
+    raise Blix::Rest::AuthorizationError,"invalid login or password" unless .... # validate login and password
+
+
+
+
 ## REQUEST FORMAT
 
 you can provide custom responses to a request format by registering a format parser
@@ -86,6 +96,9 @@ Note that the format for a non standard (html/json/xml) request is only taken fr
 the extension part ( after the .) of the url ... eg 
 
 `http://mydomain.com/mypage.jsonp` will give a format of jsonp
+
+you can specify the :default option in your route for a fallback format other than :json
+eg `:default=>:html`
 
 
     class MyParser < FormatParser
@@ -119,6 +132,20 @@ Then in your controller accept that format..
         {"id"=>12}
     end
 
+## CUSTOM RESPONSE WITHOUT CUSTOM PARSER
+
+to force a response in a certain format use the :force option in your route. 
+
+to return a custom response use `:force=>:raw` . You will have to specify all the 
+headers and the body is returned as it is.
+
+use the following to accept requests in a special format ..
+
+    get '/custom', :accept=>:xyz, :force=>:raw do
+       add_headers 'Content-Type'=>'text/xyz'
+       
+       "xyz"
+    end
 
 ## Controller
 
@@ -187,6 +214,13 @@ eg  `post '/myform' :accept=>[:html]      # this will only accept html requests.
 in features/support/setup.rb
 
    require 'blix/rest/cucumber'
+   
+   and setup your database connections etc
+   
+   
+in features/support/hooks.rb
+
+   reset your database
 
 
    

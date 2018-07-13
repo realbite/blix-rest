@@ -8,7 +8,12 @@ module Blix::Rest
       @_parsers["html"]  ||= HtmlFormatParser.new
       @_parsers["json"]  ||= JsonFormatParser.new
       @_parsers["xml"]   ||= XmlFormatParser.new
+      @_parsers["raw"]   ||= RawFormatParser.new
       @_options = opts
+    end
+    
+    def _cache
+      @_cache ||= {}
     end
     
     def extract_parsers_from_options(opts)
@@ -91,13 +96,26 @@ module Blix::Rest
       verb            = env["REQUEST_METHOD"]
       path            = req.path #env["REQUEST_PATH"] || "/"
       
-      blk,path_params = RequestMapper.match(verb,path)
+      blk,path_params,options = RequestMapper.match(verb,path)
       
-      format = path_params[:format] || get_format(env) || :json
-      parser = get_parser(format)
+      blk,path_params,options = RequestMapper.match('ALL',path) unless blk
+      
+      default_format = options && options[:default] && options[:default].to_sym
+      force_format = options && options[:force] && options[:force].to_sym
+      do_cache = options && options[:cache]
+      
+      format =  path_params[:format] || get_format(env) || default_format ||  :json
+      parser = get_parser(force_format || format)
       
       unless parser
         return [406,{},["Invalid Format: #{format}"]]
+      end
+      
+      # check for cached response end return with cached response if found.
+      #
+      if do_cache && _cache[blk.object_id]
+        response = _cache[blk.object_id]
+        return [response.status,response.headers.merge("X-BLIX-CACHE"=>"CACHED"), [response.content]]
       end
       
       response = Response.new
@@ -119,6 +137,10 @@ module Blix::Rest
           puts $@  # FIXME should go to logger
         else # no error
           parser.format_response(value,response)
+          # cache response if requested
+          if do_cache
+            _cache[blk.object_id] = response
+          end
         end
         
       else

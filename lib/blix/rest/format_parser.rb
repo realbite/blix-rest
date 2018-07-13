@@ -50,6 +50,25 @@ module Blix::Rest
   end
   
   #-----------------------------------------------------------------------------
+  # the default raw format parser
+  #
+  class RawFormatParser < FormatParser
+    
+    def set_default_headers(headers)
+      #headers[CACHE_CONTROL]= CACHE_NO_STORE 
+      #headers[PRAGMA]       = NO_CACHE 
+    end
+    
+    def format_error(message)
+      message
+    end
+    
+    def format_response(value,response)
+      response.content = value.to_s 
+    end
+  end
+  
+  #-----------------------------------------------------------------------------
   # the default xml format parser
   #
   class XmlFormatParser < FormatParser
