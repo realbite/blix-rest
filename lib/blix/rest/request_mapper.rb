@@ -10,6 +10,8 @@ module Blix::Rest
     PATH_SEP         = '/'
     STAR_PLACEHOLDER = '*'
     
+    # the 
+    
     class TableNode
       attr_accessor :blk
       attr_reader   :value
@@ -126,7 +128,7 @@ module Blix::Rest
       
       # match a given path to  declared route.
       def match(verb,path)
-        path = PATH_SEP + path if path[0,1] != PATH_SEP  # ensure a leading slash on path
+        path = PATH_SEP + path if path[0,1] != PATH_SEP             # ensure a leading slash on path
 
         path = path[path_root_length..-1] if path_root_length.to_i > 0
         if path
@@ -135,13 +137,22 @@ module Blix::Rest
            return [nil,{},nil]
         end
         
+        parameters = StringHash.new
+        
         parts = path.split(PATH_SEP)
         current = table[verb]
         limit   = parts.length - 1 
-        parameters = StringHash.new
+        
         # handle the root node here
         if path==""
-          return  [current.blk,parameters,current.opts]
+          if current.blk
+             return  [current.blk,parameters,current.opts]
+          elsif (havewild = current[STAR_PLACEHOLDER])
+             parameters['wildpath'] = '/'
+             return  [havewild.blk,parameters,havewild.opts]
+          else
+            return [nil,{},nil]
+          end
         end
         
         parts.each_with_index do |section,idx|
@@ -155,7 +166,14 @@ module Blix::Rest
           
           if current
             if idx == limit # the last section
-              return  [current.blk,parameters,current.opts]
+              if current.blk
+                return  [current.blk,parameters,current.opts]
+              elsif (havewild = current[STAR_PLACEHOLDER])
+                parameters['wildpath'] = '/'
+                return  [havewild.blk,parameters,havewild.opts]
+              else
+                return [nil,{},nil]
+              end
             end
           else
             current = last[WILD_PLACEHOLDER]
@@ -168,7 +186,13 @@ module Blix::Rest
               # 
               current = last[STAR_PLACEHOLDER]
               if current
-                parameters['wildpath'] = '/' + parts[idx..-1].join('/')
+                wildpath = '/' + parts[idx..-1].join('/') 
+                wildformat  = File.extname(wildpath)
+                unless wildformat.empty?
+                  wildpath = wildpath[0..-(wildformat.length+1)] 
+                  parameters['format'] = wildformat[1..-1].to_sym
+                end
+                parameters['wildpath'] = wildpath
                 return [current.blk,parameters,current.opts]
               else
                 return [nil,{},nil]

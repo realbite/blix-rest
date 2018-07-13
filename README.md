@@ -55,6 +55,9 @@ if there is a more specific path then it will be used first :
 
 `get '/*'` will be used as a default path if no other paths match.
 
+`all '/mypath'` will accept all http_methods but if a more specific handler
+   is specified then it will be used first.
+
 
 
 ## GENERATE AN ERROR RESPONSE
@@ -156,7 +159,7 @@ have access to a number of methods
 
     
     env            : the request environment hash
-    verb           : the request method ( 'GET'/'POST' ..)
+    method         : the request method lowercase( 'get'/'post' ..)
     req            : the rack request
     body           : the request body as a string
     query_params   : a hash of parameters as passed in the url as parameters

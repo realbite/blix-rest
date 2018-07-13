@@ -94,7 +94,7 @@ module Blix::Rest
       req = Rack::Request.new(env)
       
       verb            = env["REQUEST_METHOD"]
-      path            = req.path #env["REQUEST_PATH"] || "/"
+      path            = req.path 
       
       blk,path_params,options = RequestMapper.match(verb,path)
       

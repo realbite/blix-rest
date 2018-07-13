@@ -149,6 +149,10 @@ module Blix::Rest
       @_verb
     end
     
+    def method
+      env['REQUEST_METHOD'].downcase
+    end
+    
     def session
       req.session
     end

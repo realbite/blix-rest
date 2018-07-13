@@ -118,17 +118,18 @@ module Blix::Rest
     end
     
     it "should detect the format" do
-      blk = lambda{|params| "list:#{params.to_s}"}
+      blk = lambda{|params| params}
       RequestMapper.add_path(GET,"/products/:prod_id/user",{},&blk)
       
-      RequestMapper.process(GET,"/products/1234/user").should == 'list:{"prod_id"=>"1234"}'
-      RequestMapper.process(GET,"/products/1234/user.json").should == 'list:{"prod_id"=>"1234", "format"=>:json}'
-      RequestMapper.process(GET,"/products.html/1234/user.xxx").should == 'list:{"prod_id"=>"1234", "format"=>:xxx}'
-      RequestMapper.process(GET,"/products.html/1234/user.jsonx").should == 'list:{"prod_id"=>"1234", "format"=>:jsonx}'
+      RequestMapper.process(GET,"/products/1234/user").should == {"prod_id"=>"1234"}
+      RequestMapper.process(GET,"/products/1234/user.json").should == {"prod_id"=>"1234", "format"=>:json}
+      RequestMapper.process(GET,"/products.html/1234/user.xxx").should == {"prod_id"=>"1234", "format"=>:xxx}
+      RequestMapper.process(GET,"/products.html/1234/user.jsonx").should == {"prod_id"=>"1234", "format"=>:jsonx}
       
       RequestMapper.add_path(GET,"/others/:other_id/*",{},&blk)
-      RequestMapper.process(GET,"/others/1234/other").should == 'list:{"other_id"=>"1234", "wildpath"=>"/other"}'
-      RequestMapper.process(GET,"/others/1234/other.json").should == 'list:{"other_id"=>"1234", "format"=>:json, "wildpath"=>"/other"}'
+      RequestMapper.process(GET,"/others/1234/other").should == {"other_id"=>"1234", "wildpath"=>"/other"}
+      RequestMapper.process(GET,"/others/1234/other.json").should == {"other_id"=>"1234", "format"=>:json, "wildpath"=>"/other"}
+      RequestMapper.process(GET,"/others/1234/zzz/other.json").should == {"other_id"=>"1234", "format"=>:json, "wildpath"=>"/zzz/other"}
       
     end
     
@@ -201,6 +202,16 @@ module Blix::Rest
       RequestMapper.process(GET,"/aaa/bbb").should == 'list:{"wildpath"=>"/bbb"}'
       RequestMapper.process(GET,"/aaa/aaa").should == "list:{}"
       RequestMapper.process(GET,"/zzz/yyyy/xxx").should == 'list:{"wildpath"=>"/zzz/yyyy/xxx"}'
+      RequestMapper.process(GET,"/xxx").should == 'list:{"wildpath"=>"/xxx"}'
+      RequestMapper.process(GET,"/").should == 'list:{"wildpath"=>"/"}'
+    end
+    
+    it "should start wildcard path correctly" do
+      blk = lambda{|params| params}
+      RequestMapper.add_path(GET,"/foo/*",{},&blk)
+      puts RequestMapper.table.inspect
+      RequestMapper.process(GET,"/foo/").should == {"wildpath"=>"/"}
+      
     end
     
     
