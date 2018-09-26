@@ -240,6 +240,17 @@ module Blix::Rest
          ""
       end
     end
+    
+       
+    # send a (default) error
+    def send_error(message,status=nil,headers=nil)
+      raise ServiceError.new(message,status,headers)   
+    end
+    
+    def auth_error(message=nil)
+      raise AuthorizationError,message
+    end
+    
     #----------------------------------------------------------------------------------------------------------
     # template methods that can be overwritten
     

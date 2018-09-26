@@ -62,13 +62,13 @@ if there is a more specific path then it will be used first :
 
 ## GENERATE AN ERROR RESPONSE
 
-raise a ServiceError within your controller code.
-
-`raise Blix::Rest::ServiceError.new(message,status,headers)`
+`send_error(message,status,headers)`
 
 or for standard headers and status 406 just ..
 
-`raise Blix::Rest::ServiceError, "my error message"` 
+`send_error "my error message`
+
+
 
 ## HEADERS && STATUS
 
@@ -85,7 +85,7 @@ change the status of a success response with eg:
 in controller..
 
     login,password = get_basic_auth
-    raise Blix::Rest::AuthorizationError,"invalid login or password" unless .... # validate login and password
+    auth_error( "invalid login or password" ) unless .... # validate login and password
 
 
 
@@ -180,7 +180,9 @@ have access to a number of methods
     h              : escape html string to avoid XSS
     escape_javascript : escape  a javascript string
     server_options : options as passed to server at create time
-  
+    mode_test?        : test mode ?
+    mode_production?  : production mode ?
+    mode_development? : development mode?
   
 to accept requests other than json then set `:accept=>[:json,:html]` as options        in the route
 

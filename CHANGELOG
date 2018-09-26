@@ -1,3 +1,4 @@
+# 0.1.26  - add send_error and auth_error verbs to controller  25/9/2018
 # 0.1.25  - add all verb to controller  13/7/2018
 # 0.1.24  - add default format option for route.
 # 0.1.23  - move full_path method to request mapper

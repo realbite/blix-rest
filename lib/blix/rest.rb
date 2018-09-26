@@ -4,9 +4,9 @@ require "logger"
 module Blix
   module Rest
     
-    MIME_TYPE_JSON = 'application/json'
-    EXPIRED_TOKEN_MESSAGE = 'token expired'
-    INVALID_TOKEN_MESSAGE = 'invalid token'
+    MIME_TYPE_JSON   = 'application/json'
+    #EXPIRED_TOKEN_MESSAGE = 'token expired'
+    #INVALID_TOKEN_MESSAGE = 'invalid token'
     
     CONTENT_TYPE      = 'Content-Type'
     CONTENT_TYPE_JSON = 'application/json'
@@ -83,10 +83,10 @@ require 'blix/rest/version'
 require 'blix/rest/string_hash'
 
 # client classes
-require 'blix/rest/remote_service'
-require 'blix/rest/web_frame_service'
-require 'blix/rest/service'
-require 'blix/rest/service_resource'
+#require 'blix/rest/remote_service'
+#require 'blix/rest/web_frame_service'
+#require 'blix/rest/service'
+#require 'blix/rest/service_resource'
 
 # provider classes
 require 'rack'
@@ -94,9 +94,9 @@ require 'blix/rest/response'
 require 'blix/rest/format_parser'
 require 'blix/rest/request_mapper'
 require 'blix/rest/server'
-require 'blix/rest/provider'
+#require 'blix/rest/provider'
 require 'blix/rest/controller'
-require 'blix/rest/provider_controller'
+#require 'blix/rest/provider_controller'
 
 # ensure that that times are sent in the correct json format
 class Time
