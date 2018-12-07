@@ -19,8 +19,8 @@ Then(/^the status should be (\d+)$/) do |code|
 end
 
 Then(/^there should be an error$/) do
-  valid_response.status.to_s[0,1].should_not == '2'
-  expect(valid_response.error).to_not be nil
+  expect(valid_response.status.to_s[0,1]).not_to eq '2'
+  expect(valid_response.error).not_to be_nil
 end
 
 Then(/^the error message should include ["'](.*?)["']$/) do |field|
@@ -65,7 +65,7 @@ Then(/^the data "(.*?)" should == (.*?)$/) do |field,val|
     data = valid_data
   end
   v = data[field].to_s
-  
+
   if val =~ %r{^@([^@]*)$}
      expect(v).to eq store[$1].to_s
   elsif val =~ %r{^(::)?[A-Z][A-z_a-z:]*$}
@@ -73,7 +73,7 @@ Then(/^the data "(.*?)" should == (.*?)$/) do |field,val|
   elsif val =~ %r{^['"](.*)['"]$}
      expect(v).to eq $1
   end
-  
+
 end
 
 Then(/^the data "(.*?)" should equal ["'](.*?)["']$/) do |field,val|

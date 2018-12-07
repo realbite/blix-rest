@@ -1,23 +1,23 @@
 module Blix::Rest
-  
+
   class RequestMapperError < StandardError; end
-  
-  # register routes with this class and then we can match paths to 
+
+  # register routes with this class and then we can match paths to
   # these routes and return an associated block and parameters.
   class RequestMapper
-    
-    WILD_PLACEHOLDER = '/'
-    PATH_SEP         = '/'
-    STAR_PLACEHOLDER = '*'
-    
-    # the 
-    
+
+    WILD_PLACEHOLDER = '/'.freeze
+    PATH_SEP         = '/'.freeze
+    STAR_PLACEHOLDER = '*'.freeze
+
+    # the
+
     class TableNode
       attr_accessor :blk
       attr_reader   :value
       attr_accessor :opts
       attr_reader   :parameter
-      
+
       def initialize(name)
         @children = {}
         if name[0,1] == ':'
@@ -27,19 +27,19 @@ module Blix::Rest
           @value    = name
         end
       end
-      
+
       def [](k)
         @children[k]
       end
-      
+
       def []=(k,v)
         @children[k] = v
       end
-      
+
     end
-    
-    class << self 
-      
+
+    class << self
+
       def set_path_root(root)
         root = root.to_s
         root = "/" + root if root[0,1] != '/'
@@ -47,28 +47,28 @@ module Blix::Rest
         @path_root = root
         @path_root_length = @path_root.length - 1
       end
-      
+
       def path_root
         @path_root || '/'
       end
-      
+
       def path_root_length
         @path_root_length
       end
-      
+
       def full_path(path)
         path = path[1..-1] if path[0,1] == '/'
         path_root + path
       end
-      
+
       def locations
         @locations ||= Hash.new {|h,k| h[k] = []}
       end
-      
+
       def table
         @table ||= compile
       end
-      
+
       # used for testing only !!
       def reset(vals=nil)
         save = [@table && @table.dup, @locations && @locations.dup, @path_root && @path_root.dup, @path_root_length]
@@ -85,7 +85,7 @@ module Blix::Rest
         end
         save
       end
-      
+
       # compile routes into a tree structure for easy lookup
       def compile
         @table = Hash.new {|h,k| h[k] = TableNode.new("")}
@@ -100,13 +100,13 @@ module Blix::Rest
               if (section == STAR_PLACEHOLDER) && (idx < (parts.length-1))
                 raise RequestMapperError,"do not add a path after the * in #{path}"
               end
-              
+
               # check that wild card match in name
               if current[node.value]
                 if (node.value == WILD_PLACEHOLDER) && (node.parameter !=  current[node.value].parameter)
                   raise RequestMapperError, "parameter mismatch in route=#{path}, expected #{current[node.value].parameter} but got #{node.parameter}"
                 end
-                
+
               else
                 current[node.value] = node
               end
@@ -118,14 +118,14 @@ module Blix::Rest
         end
         @table
       end
-      
+
       # declare a route
-      def add_path( verb, path, opts = {}, &blk)   
-        path = path[1..-1] if path[0,1] == PATH_SEP 
+      def add_path( verb, path, opts = {}, &blk)
+        path = path[1..-1] if path[0,1] == PATH_SEP
         RequestMapper.locations[verb] << [verb,path,opts,blk]
         @table = nil # force recompile
       end
-      
+
       # match a given path to  declared route.
       def match(verb,path)
         path = PATH_SEP + path if path[0,1] != PATH_SEP             # ensure a leading slash on path
@@ -136,13 +136,13 @@ module Blix::Rest
         else
            return [nil,{},nil]
         end
-        
+
         parameters = StringHash.new
-        
+
         parts = path.split(PATH_SEP)
         current = table[verb]
-        limit   = parts.length - 1 
-        
+        limit   = parts.length - 1
+
         # handle the root node here
         if path==""
           if current.blk
@@ -154,16 +154,16 @@ module Blix::Rest
             return [nil,{},nil]
           end
         end
-        
+
         parts.each_with_index do |section,idx|
           format  = File.extname(section)
           section = File.basename(section,format)
-          
-          parameters['format'] = format[1..-1].to_sym if (idx == limit) && !(format.empty?) 
-          
+
+          parameters['format'] = format[1..-1].to_sym if (idx == limit) && !(format.empty?)
+
           last    = current
           current = current[section]
-          
+
           if current
             if idx == limit # the last section
               if current.blk
@@ -183,13 +183,13 @@ module Blix::Rest
                 return [current.blk,parameters,current.opts]
               end
             else
-              # 
+              #
               current = last[STAR_PLACEHOLDER]
               if current
-                wildpath = '/' + parts[idx..-1].join('/') 
+                wildpath = '/' + parts[idx..-1].join('/')
                 wildformat  = File.extname(wildpath)
                 unless wildformat.empty?
-                  wildpath = wildpath[0..-(wildformat.length+1)] 
+                  wildpath = wildpath[0..-(wildformat.length+1)]
                   parameters['format'] = wildformat[1..-1].to_sym
                 end
                 parameters['wildpath'] = wildpath
@@ -202,16 +202,15 @@ module Blix::Rest
         end
         return [nil,{},nil]
       end
-      
+
       # match a path to a route and call any associated block with the extracted parameters.
       def process(verb,path)
         blk, params = match(verb,path)
         blk && blk.call(params)
       end
-      
+
       def routes
         hash = {}
-        puts "----------------------------"
         locations.values.each do |group|
           group.each do |route|
             verb = route[0]
@@ -230,7 +229,7 @@ module Blix::Rest
         str = ""
         list.each do |route|
           pairs = route[1]
-          ['GET','POST','PUT','DELETE','ALL'].each do |verb|
+          (HTTP_VERBS << 'ALL').each do |verb|
             if route[1].key? verb
               str << verb << "\t" << route[0] << route[1][verb] << "\n"
             end
@@ -239,18 +238,18 @@ module Blix::Rest
         end
         str
       end
-      
-      
-      
+
+
+
     end
   end # RequestMapper
-  
+
   def self.set_path_root(*args)
      RequestMapper.set_path_root( *args )
   end
-  
+
   def self.full_path(path)
      RequestMapper.full_path(path)
   end
-  
+
 end # Rest

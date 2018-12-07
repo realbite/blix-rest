@@ -3,11 +3,11 @@ require "logger"
 
 module Blix
   module Rest
-    
+
     MIME_TYPE_JSON   = 'application/json'
     #EXPIRED_TOKEN_MESSAGE = 'token expired'
     #INVALID_TOKEN_MESSAGE = 'invalid token'
-    
+
     CONTENT_TYPE      = 'Content-Type'
     CONTENT_TYPE_JSON = 'application/json'
     CONTENT_TYPE_HTML = 'text/html; charset=utf-8'
@@ -21,47 +21,60 @@ module Blix
     JSON_ENCODED      = %r{^application/json} # NOTE: "text/json" and "text/javascript" are deprecated forms
     HTML_ENCODED      = %r{^text/html}
     XML_ENCODED       =  %r{^application/xml}
-    
+
     HTTP_DATE_FORMAT  = "%a, %d %b %Y %H:%M:%S GMT"
-    
+    HTTP_VERBS        = %w[GET HEAD POST PUT DELETE OPTIONS PATCH ]
+    HTTP_BODY_VERBS   = %w[POST PUT PATCH ]
+
     # the test/development/production environment
     def self.environment
        @_environment ||= ENV['RACK_ENV'] || "development"
     end
-    
+
     def self.environment=(val)
       @_environment = val.to_s
     end
-    
+
     def self.logger=(val)
       @_logger = val
     end
-    
+
     def self.logger
       @_logger ||= Logger.new(STDOUT)
     end
-    
+
     class BinaryData < String
       def as_json(*a)
         {"base64Binary"=>Base64.encode64(self)}
       end
-    end 
-    
-        
+    end
+
+    #interpret payload string as json
+    class RawJsonString
+      def initialize(str)
+        @str = str
+      end
+
+      def as_json(*a)
+        @str
+      end
+    end
+
+
     class BadRequestError < StandardError; end
-    
+
     class ServiceError < StandardError
-      
+
       attr_reader :status
       attr_reader :headers
-      
+
       def initialize(message,status=nil, headers=nil)
         super(message)
         @status = status || 406
         @headers = headers
       end
     end
-    
+
     class AuthorizationError < StandardError
       def initialize(message)
         super(message)
