@@ -3,15 +3,15 @@
     gem install blix-rest
 
 
-## CREATE A SIMPLE WEBSERVICE 
+## CREATE A SIMPLE WEBSERVICE
 
 #### put the following in config.ru
 
 
     require 'blix/rest'
-    
+
     class HomeController < Blix::Rest::Controller
-    
+
          get '/hello', :accept=>[:html,:json], :default=>:html do
             if format == :json
               {"message"=>"hello world"}
@@ -20,7 +20,7 @@
             end
          end
     end
-    
+
     run Blix::Rest::Server.new
 
 
@@ -29,15 +29,24 @@
 #### at the command line ..
 
 `ruby -S rackup -p3000`
-    
-    
+
+
 #### now go to your browser and enter ..
-    
+
 `http://localhost:3000/hello`
 
-or 
+or
 
 `http://localhost:3000/hello.json`
+
+## Note on JSON
+
+the default json parser uses multi json. load the specific json library you need
+before loading `blix/rest`.
+
+when using oj then you may need to set some default options eg:
+
+  `MultiJson.default_options = {:mode=>:custom, :use_as_json=>true}`  
 
 ## NOTE ON PATHS
 
@@ -45,7 +54,7 @@ or
 
 `path_params[:user_id]` contains the content of the path at location :user_id
 
-`get '/resource/*'`
+`get '/resource/*wildpath'`
 
 `path_params[:wildpath]` contains the remainder of the path where the * is.
 
@@ -57,6 +66,18 @@ if there is a more specific path then it will be used first :
 
 `all '/mypath'` will accept all http_methods but if a more specific handler
    is specified then it will be used first.
+
+
+## APPLICATION MOUNT POINT
+
+this is the path of the mount path of the application
+
+this will be set to the environment variable `BLIX_REST_ROOT` if present
+
+otherwise set it manually with:
+
+`Blix::Rest.set_path_root( "/myapplication")`
+
 
 
 
@@ -73,12 +94,12 @@ or for standard headers and status 406 just ..
 ## HEADERS && STATUS
 
 add special headers to your response with eg:
-   
+
 `add_headers( "AAA"=>"xxx","BBB"=>"yyyy")`
-   
+
 change the status of a success response with eg:
 
-`set_status(401)` 
+`set_status(401)`
 
 ## BASIC AUTH
 
@@ -96,7 +117,7 @@ you can provide custom responses to a request format by registering a format par
 for that format. you can also override the standard html,json or xml behavior.
 
 Note that the format for a non standard (html/json/xml) request is only taken from
-the extension part ( after the .) of the url ... eg 
+the extension part ( after the .) of the url ... eg
 
 `http://mydomain.com/mypage.jsonp` will give a format of jsonp
 
@@ -105,25 +126,25 @@ eg `:default=>:html`
 
 
     class MyParser < FormatParser
-        
+
         def set_default_headers(headers)
-          headers[CACHE_CONTROL]= CACHE_NO_STORE 
-          headers[PRAGMA]       = NO_CACHE 
+          headers[CACHE_CONTROL]= CACHE_NO_STORE
+          headers[PRAGMA]       = NO_CACHE
           headers[CONTENT_TYPE] = CONTENT_TYPE_JSONP
         end
-        
+
         def format_error(message)
           message.to_s
         end
-        
+
         def format_response(value,response)
           response.content = "<script>load(" +
             MultiJson.dump( value) +
             ")</script>"
         end
     end
-    
-    
+
+
     s = Blix::Rest::Server.new
     s.register_parser(:jsonp,MyParser.new)
 
@@ -137,16 +158,16 @@ Then in your controller accept that format..
 
 ## CUSTOM RESPONSE WITHOUT CUSTOM PARSER
 
-to force a response in a certain format use the :force option in your route. 
+to force a response in a certain format use the :force option in your route.
 
-to return a custom response use `:force=>:raw` . You will have to specify all the 
+to return a custom response use `:force=>:raw` . You will have to specify all the
 headers and the body is returned as it is.
 
 use the following to accept requests in a special format ..
 
     get '/custom', :accept=>:xyz, :force=>:raw do
        add_headers 'Content-Type'=>'text/xyz'
-       
+
        "xyz"
     end
 
@@ -157,7 +178,7 @@ use the following to accept requests in a special format ..
 base class for controllers. within your block handling a particular route you
 have access to a number of methods
 
-    
+
     env            : the request environment hash
     method         : the request method lowercase( 'get'/'post' ..)
     req            : the rack request
@@ -166,7 +187,7 @@ have access to a number of methods
     path_params    : a hash of parameters constructed from variable parts of the path
     post_params    : a hash of parameters passed in the body of the request
     params         : all the params combined
-    user           : the user making this request ( or nil if 
+    user           : the user making this request ( or nil if
     format         : the format the response should be in :json or :html
     before         : before hook ( opts ) - remember to add 'super' as first line !!!
     after          : after hook (opts,response)- remember to add 'super' as first line !!!
@@ -183,21 +204,47 @@ have access to a number of methods
     mode_test?        : test mode ?
     mode_production?  : production mode ?
     mode_development? : development mode?
-  
+
+
+    get_session_id(session_name, opts={}) :
+    refresh_session_id(session_name, opts={}) :
+
 to accept requests other than json then set `:accept=>[:json,:html]` as options        in the route
 
 eg  `post '/myform' :accept=>[:html]      # this will only accept html requests.`
-  
 
-## VIEWS
+### Sessions
 
+the following methods are available in the controller for managing sessions.
+
+    get_session_id(session_name, opts={})
+
+this will set up a session and setup the relevant cookie  headers forthe browser.
+
+    refresh_session_id(session_name, opts={})
+
+this will generate a new session_id and setup the relevant headers
+
+options can include:
+
+    :secure => true    # secure cookies only
+    :http = >true      # cookies for http only not javascript requests
+    :samesite =>:strict  # use strict x-site policy
+    :samesite =>:lax     # use lax x-site policy
+
+
+
+
+## Views
+
+the location of your views defaults to `app/views` otherwise set it manually with:
 
     Blix::Rest.set_erb_root ::File.expand_path('../lib/myapp/views',  __FILE__)
 
+the within a controller render your view with.
 
-  
     render_erb( "users/index", :layout=>'layouts/main', :locals=>{:name=>"charles"})
-    
+
     ( locals work from ruby 2.1 )
 
 
@@ -213,26 +260,31 @@ eg  `post '/myform' :accept=>[:html]      # this will only accept html requests.
                main.html.erb
 
 
+## Logging
+
+    Blix::Rest.logger = Logger.new('/var/log/myapp.log')
+
+
 ## Testing a Service with cucumber
 
 
 in features/support/setup.rb
 
    require 'blix/rest/cucumber'
-   
+
    and setup your database connections etc
-   
-   
+
+
 in features/support/hooks.rb
 
    reset your database
 
 
-   
+
 now you can use the following in scenarios ........
 
         Given user guest gets "/info"
-        
+
         Given the following users exist:
               | name  | level |
               | anon  | guest |
@@ -240,12 +292,12 @@ now you can use the following in scenarios ........
               | mary  | provider  |
               | paul  | user  |
               | admin | admin |
-              
+
         Given user mary posts "/worlds" with {"name":"narnia"}    [..or gets/puts/deletes]
         Then store the "id" as "world_id"  
-        
+
         Given user bob posts "/worlds/:world_id" with  {"the_world_id"::world_id }
-        
+
         Then the status should be 200
         Then the data type should be "r_type"
         Then the data length should be 3
@@ -253,7 +305,7 @@ now you can use the following in scenarios ........
         Then the error message should include "unique"
         Then the data "name" should == "bob"
         Then the data should include "name"
-        
+
         And explain
 
 
@@ -262,8 +314,8 @@ NOTE : if you need to set up your database with users then you can use the follo
 in features/support/world.rb .........
 
     class RestWorld
-      
-      # add a hook to create the user in the  database - 
+
+      # add a hook to create the user in the  database -
       #
       def before_user_create(user,hash)
         name = hash["name"]
@@ -288,31 +340,31 @@ now you can also use eg  `:myuser_foo_id` within a request path/json.
 
 The asset manager stores a hash of the asset data and the current unique file suffix for each asset in its own file.
 This config file is stored in a config directory. The default is 'config/assets' but another location can be specified.
- 
 
-    Blix::AssetManager.config_dir = "myassets/config/location"   # defaults to `"config/assets" 
+
+    Blix::AssetManager.config_dir = "myassets/config/location"   # defaults to `"config/assets"`
 
 
 ### Compile your assets
 
     require 'blix/assets'
-  
+
     ......
     ......
     ASSETS = ['admin.js', 'admin.css', 'standard.js']
-    ASSETS.each do |name| 
-        
+    ASSETS.each do |name|
+
        compiled_asset = environment[name].to_s
-       
+
        Blix::AssetManager.if_modified(name,compiled_asset,:rewrite=>true) do |a|
-         
+
          filename = File.join(ROOT,"public","assets",a.newname)
          puts "writing #{name} to #{filename}"
          File.write filename,compiled_asset
-         
+
          File.unlink File.join(ROOT,"public","assets",a.oldname) if a.oldname
        end
-       
+
     end
 
 
@@ -322,18 +374,22 @@ This config file is stored in a config directory. The default is 'config/assets'
 eg:
 
     require 'blix/assets'
-    
+
     ........
-    
+
     <script src="<%= asset_path('assets/standard.js') %>" type="text/javascript"></script>
+
+or
+
+    <%= asset_tag('/assets/standard.js') %>
 
 
 ### or in your controller
 
-eg: 
+eg:
 
     require 'blix/assets'
-    
+
     ........
 
     path = asset_path('assets/standard.js')
@@ -348,5 +404,5 @@ In production the expiry date of your assets can be set to far in the future to 
 
 In development or test mode the standard name will be used which then will make use of your asset pipeline ( eg sprockets )
 
-Asset names can contain only one extension. if there are more extensions eg: 'myfile.extra.css' then only the last 
+Asset names can contain only one extension. if there are more extensions eg: 'myfile.extra.css' then only the last
 extension will be used: in this case the name will be simplified to 'myfile.css' !!!

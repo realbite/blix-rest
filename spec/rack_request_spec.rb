@@ -18,7 +18,7 @@ module Blix::Rest
 
     it "should return a response" do
       resp = @srv.get("/xxx", {})
-      resp.status.should == 406
+      resp.status.should == 404
     end
 
     it "should return status 200 response" do

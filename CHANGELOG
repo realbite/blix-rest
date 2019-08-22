@@ -1,3 +1,4 @@
+# 0.1.29  - add session handling routines  15/06/2019
 # 0.1.27  - change json format handling of string as raw json  01/11/2018
 # 0.1.26  - add send_error and auth_error verbs to controller  25/9/2018
 # 0.1.25  - add all verb to controller  13/7/2018

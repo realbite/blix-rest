@@ -1,6 +1,6 @@
 module Blix::Rest
-  
-  class Server 
+
+  class Server
 
     def initialize(opts={})
       @_parsers={}
@@ -11,42 +11,42 @@ module Blix::Rest
       @_parsers["raw"]   ||= RawFormatParser.new
       @_options = opts
     end
-    
+
     def _cache
       @_cache ||= {}
     end
-    
+
     def extract_parsers_from_options(opts)
       opts.each do |k,v|
         if k=~/^(\w*)_parser&/
           format = $1
-          parser = v 
+          parser = v
           register_parser(format,parser)
         end
       end
     end
-    
+
     def get_parser(format)
       @_parsers[format.to_s]
     end
-    
+
     def register_parser(format,parser)
       raise "#{k} must be an object with parent class Blix::Rest::FormatParser" unless parser.kind_of?(FormatParser)
       @_parsers[format.to_s.downcase] = parser
     end
-    
+
     def retrieve_params(env)
       post_params = {}
       body        = ""
       params = env['params'] || {}
       params.merge!(::Rack::Utils.parse_nested_query(env['QUERY_STRING']))
-      
+
       if env['rack.input']
         post_params = ::Rack::Utils::Multipart.parse_multipart(env)
         unless post_params
           body = env['rack.input'].read
           env['rack.input'].rewind
-          
+
           unless body.empty?
             begin
               post_params = case(env['CONTENT_TYPE'])
@@ -72,7 +72,7 @@ module Blix::Rest
       end
       [params,post_params,body]
     end
-    
+
     def get_format(env)
       case env['HTTP_ACCEPT']
       when JSON_ENCODED then :json
@@ -82,48 +82,48 @@ module Blix::Rest
         nil
       end
     end
-    
+
     # convert the response to the appropriate format
     def format_error(message, format)
       parser
     end
-    
-    
+
+
     def call(env)
-      
+
       req = Rack::Request.new(env)
-      
+
       verb            = env["REQUEST_METHOD"]
-      path            = req.path 
-      
+      path            = req.path
+
       blk,path_params,options = RequestMapper.match(verb,path)
-      
+
       blk,path_params,options = RequestMapper.match('ALL',path) unless blk
-      
+
       default_format = options && options[:default] && options[:default].to_sym
       force_format = options && options[:force] && options[:force].to_sym
       do_cache = options && options[:cache]
-      
+
       format =  path_params[:format] || get_format(env) || default_format ||  :json
       parser = get_parser(force_format || format)
-      
+
       unless parser
         return [406,{},["Invalid Format: #{format}"]]
       end
-      
+
       # check for cached response end return with cached response if found.
       #
       if do_cache && _cache[blk.object_id]
         response = _cache[blk.object_id]
         return [response.status,response.headers.merge("X-BLIX-CACHE"=>"CACHED"), [response.content]]
       end
-      
+
       response = Response.new
-      
+
       parser.set_default_headers(response.headers)
-      
+
       if blk
-        
+
         begin
           params = env['params']
           value  = blk.call(path_params,params,req,format,response,@_options)
@@ -133,8 +133,8 @@ module Blix::Rest
           response.set(401,parser.format_error(e.to_s),{AUTH_HEADER=>'Basic realm="rest"'})
         rescue Exception=>e
           response.set(500,parser.format_error("internal error"))
-          puts $!  # FIXME should go to logger
-          puts $@  # FIXME should go to logger
+          ::Blix::Rest.logger <<  "----------------------------\n#{$!}\n----------------------------"
+          ::Blix::Rest.logger <<  "----------------------------\n#{$@}\n----------------------------"
         else # no error
           parser.format_response(value,response)
           # cache response if requested
@@ -142,9 +142,9 @@ module Blix::Rest
             _cache[blk.object_id] = response
           end
         end
-        
+
       else
-        response.set(406,parser.format_error("Invalid Url"))
+        response.set(404,parser.format_error("Invalid Url"))
       end
       [response.status,response.headers, [response.content]]
     end

@@ -1,18 +1,64 @@
-Given(/^user (.*?) gets ["'](.*?)["']$/) do |user, path|
+#========== requests with tokens
+
+Given(/^(.*?) requests token for service "(.*?)"$/) do |user,service|
+  path = "/myservices/" + service + "/token"
+  send_request('POST',user,path,nil)
+  @_token = valid_response.data["token"]
+end
+
+Given(/^(.*?) validates the token for service "(.*?)"$/) do |user,service|
+  path = "/services/" + service + "/validate/" + @_token
   send_request('GET',user,path,nil)
 end
 
-Given(/^user (.*?) posts ["'](.*?)["'] with (.*?)$/) do |user, path, json|
+
+# Given(/^guest gets "(.*?)"( .*)?$/) do |path,condition|
+#   path = add_token_to_path(path,@_token) if condition == " with token"
+#   send_request('GET',"guest",path,nil)
+# end
+
+# general requests
+
+Given(/^(.*?) gets ["'](.*?)["']( with token)?$/) do |user, path, condition|
+  path = add_token_to_path(path,@_token) if condition == " with token"
+  send_request('GET',user,path,nil)
+end
+
+Given(/^(.*?) posts ["'](.*?)["'] with (.*?)$/) do |user, path, json|
   send_request('POST',user,path,json)
 end
 
-Given(/^user (.*?) deletes ["'](.*?)["']$/) do |user, path|
+Given(/^(.*?) deletes ["'](.*?)["']$/) do |user, path|
   send_request('DELETE',user,path,nil)
 end
 
-Given(/^user (.*?) puts ["'](.*?)["'] with (.*?)$/) do |user, path, json|
+Given(/^(.*?) puts ["'](.*?)["'] with (.*?)$/) do |user, path, json|
   send_request('PUT',user,path,json)
 end
+
+# alternative format
+
+Given(/^I am (.*?)$/) do | string |
+  @_current_user = string.split(' ')[-1]
+end
+
+Given(/^I get ["'](.*?)["']$/) do |path|
+  send_request('GET',@_current_user,path,nil)
+end
+
+Given(/^I post ["'](.*?)["'] with (.*?)$/) do |path, json|
+  send_request('POST',@_current_user,path,json)
+end
+
+Given(/^I delete ["'](.*?)["']$/) do | path|
+  send_request('DELETE',@_current_user,path,nil)
+end
+
+Given(/^I put ["'](.*?)["'] with (.*?)$/) do |path, json|
+  send_request('PUT',@_current_user,path,json)
+end
+
+# response steps ==============================
 
 Then(/^the status should be (\d+)$/) do |code|
   expect(valid_response.status).to eq code.to_i
@@ -28,9 +74,7 @@ Then(/^the error message should include ["'](.*?)["']$/) do |field|
 end
 
 Given(/^explain$/) do
-  puts "request ==> #{@_verb} #{@_request}"
-  puts "body ==> #{@_body}" if @_body
-  puts "response ==> #{@_response.inspect}"
+  explain
 end
 
 Then(/^the data type should be ["'](.*?)["']$/) do |type|
@@ -128,5 +172,16 @@ Then(/^store the ["'](.*?)["'] as ["'](.*?)["']$/) do |name,key|
   end
   if data.kind_of?(Hash) && data.key?(name)
     store[key] =  data[name]
+  end
+end
+
+Given(/^save the "([^"]*)"$/) do |name|
+  if valid_response.data.kind_of?(Array)
+    data = valid_response.data[0]
+  else
+    data  = valid_response.data
+  end
+  if data.kind_of?(Hash) && data.key?(name)
+    store[name] =  data[name]
   end
 end

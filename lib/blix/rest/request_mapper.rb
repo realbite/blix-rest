@@ -23,6 +23,13 @@ module Blix::Rest
         if name[0,1] == ':'
           @parameter = name[1..-1].to_sym
           @value     = WILD_PLACEHOLDER
+        elsif name[0,1] == '*'
+          if name[1..-1].empty?
+            @parameter = :wildpath
+          else
+            @parameter = name[1..-1].to_sym
+          end
+          @value     = STAR_PLACEHOLDER
         else
           @value    = name
         end
@@ -97,7 +104,7 @@ module Blix::Rest
             parts.each_with_index do |section,idx|
               node = TableNode.new(section)
               # check that a wildstar is the last element.
-              if (section == STAR_PLACEHOLDER) && (idx < (parts.length-1))
+              if (section[0] == STAR_PLACEHOLDER) && (idx < (parts.length-1))
                 raise RequestMapperError,"do not add a path after the * in #{path}"
               end
 
@@ -148,7 +155,7 @@ module Blix::Rest
           if current.blk
              return  [current.blk,parameters,current.opts]
           elsif (havewild = current[STAR_PLACEHOLDER])
-             parameters['wildpath'] = '/'
+             parameters[havewild.parameter.to_s] = '/'
              return  [havewild.blk,parameters,havewild.opts]
           else
             return [nil,{},nil]
@@ -169,7 +176,7 @@ module Blix::Rest
               if current.blk
                 return  [current.blk,parameters,current.opts]
               elsif (havewild = current[STAR_PLACEHOLDER])
-                parameters['wildpath'] = '/'
+                parameters[havewild.parameter.to_s] = '/'
                 return  [havewild.blk,parameters,havewild.opts]
               else
                 return [nil,{},nil]
@@ -192,7 +199,7 @@ module Blix::Rest
                   wildpath = wildpath[0..-(wildformat.length+1)]
                   parameters['format'] = wildformat[1..-1].to_sym
                 end
-                parameters['wildpath'] = wildpath
+                parameters[current.parameter.to_s] = wildpath
                 return [current.blk,parameters,current.opts]
               else
                 return [nil,{},nil]
@@ -229,7 +236,7 @@ module Blix::Rest
         str = ""
         list.each do |route|
           pairs = route[1]
-          (HTTP_VERBS << 'ALL').each do |verb|
+          (HTTP_VERBS +  ['ALL']).each do |verb|
             if route[1].key? verb
               str << verb << "\t" << route[0] << route[1][verb] << "\n"
             end
@@ -250,6 +257,10 @@ module Blix::Rest
 
   def self.full_path(path)
      RequestMapper.full_path(path)
+  end
+
+  if ENV['BLIX_REST_ROOT']
+    Rest.set_path_root( ENV['BLIX_REST_ROOT'] )
   end
 
 end # Rest

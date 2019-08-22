@@ -1,5 +1,6 @@
 require 'base64'
 require 'erb'
+require 'securerandom'
 
 module Blix::Rest
 
@@ -146,7 +147,7 @@ module Blix::Rest
     end
 
     def redirect(path, status=302)
-      raise ServiceError.new(nil,status,"Location"=>full_path(path))
+      raise ServiceError.new(nil,status,"Location"=>path)
     end
 
     def request_ip
@@ -233,6 +234,45 @@ module Blix::Rest
       raise AuthorizationError,message
     end
 
+    # manage session handling ==============================================
+
+    # setup the session and retrieve the session_id
+    # this id can be used to retrieve and data associated
+    # with the session_id in eg: a database or a memory hash
+    def get_session_id(session_name, opts={})
+      cookie_header = env['HTTP_COOKIE']
+      cookie_length = session_name.length
+      parts  = cookie_header && cookie_header.split(';')
+      session_id = nil
+      parts && parts.each do |cookie|
+        cookie.strip!
+        if (cookie[0..cookie_length] == session_name + '=')
+          session_id = cookie[cookie_length+1..-1]
+          break
+        end
+      end
+      session_id || refresh_session_id(session_name, opts)
+    end
+
+    # generate an new session_id for the current session
+    def refresh_session_id(session_name, opts={})
+      session_id = SecureRandom.hex(32)
+      store_session_id(session_name, session_id, opts)
+    end
+
+    # set the cookie header that stores the session_id on the browser.
+    def store_session_id(session_name, session_id, opts={})
+       cookie_text = "#{session_name}=#{session_id}"
+       cookie_text << "; Secure"          if opts[:secure] || opts['secure']
+       cookie_text << "; HttpOnly"        if opts[:http] || opts['http']
+       if policy = (opts[:samesite] || opts['samesite'])
+         cookie_text << "; SameSite=Strict" if policy.to_s.downcase == "strict"
+         cookie_text << "; SameSite=Lax"    if policy.to_s.downcase == "lax"
+       end
+       add_headers "Set-Cookie" => cookie_text
+       session_id
+    end
+
     #----------------------------------------------------------------------------------------------------------
     # template methods that can be overwritten
 
@@ -260,7 +300,9 @@ module Blix::Rest
       @_server_options = server_options
     end
 
+    # do not cache templates in development mode
     def Controller.no_template_cache
+      @_no_template_cache = (Blix::Rest.environment != 'production') if @_no_template_cache == nil
       @_no_template_cache
     end
 
@@ -278,7 +320,11 @@ module Blix::Rest
     end
 
     def Controller.erb_root
-      @_erb_root || raise( "set_erb_root must be set on the Rest::Controller to use erb")
+      @_erb_root ||= begin
+         root = File.join(Dir.pwd,'app','views')
+         raise( "use set_erb_root() to specify the location of your views") unless Dir.exist?(root)
+         root
+      end
     end
 
     # render a string within a layout.

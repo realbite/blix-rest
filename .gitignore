@@ -1,7 +1,3 @@
-*~
-CVS
-.svn
-*.log
 .bundle
 db/*.sqlite3
 log/*.log
@@ -17,5 +13,4 @@ backup/
 .loadfile
 *.gem
 config/deploy*
-
 /nbproject/private/
