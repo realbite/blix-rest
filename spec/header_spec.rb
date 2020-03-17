@@ -14,6 +14,7 @@ module Blix::Rest
     before(:all) do
       @app = Server.new
       @srv = Rack::MockRequest.new(@app)
+      @app.set_custom_headers(:html, nil)
     end
 
     it "should add headers to 200 response" do
@@ -29,6 +30,15 @@ module Blix::Rest
     it "should add headers to error response" do
       resp = @srv.get('/406header')
       expect(resp.header["XXX"]).to eq "406"
+    end
+
+    it "should add custom headers" do
+
+      @app.set_custom_headers(:html, 'YYY'=>'hello')
+      resp = @srv.get('/200header.html')
+      expect(resp.header.length).to eq 3  # adds content length
+      expect(resp.header["XXX"]).to eq "200"
+      expect(resp.header["YYY"]).to eq "hello"
     end
 
 

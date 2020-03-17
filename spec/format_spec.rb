@@ -19,6 +19,23 @@ module Blix::Rest
     end
   end
 
+  describe "handle mime types" do
+    it "should register the type" do
+        s = Server.new
+        parser = s.get_parser("json")
+        parser._format.should == "json"
+        parser._types.should == [CONTENT_TYPE_JSON]
+    end
+
+    it "should find a parser for a mime type" do
+        s = Server.new
+        parser = s.get_parser_from_type(CONTENT_TYPE_JSON)
+        parser._format.should == "json"
+        parser._types.should == [CONTENT_TYPE_JSON]
+    end
+
+  end
+
 
 
   describe HtmlFormatParser do

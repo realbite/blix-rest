@@ -53,7 +53,7 @@ module Blix
       "data"
     end
 
-    get "/200header" do
+    get "/200header", :accept=>[:json,:html] do
       add_headers "XXX"=>"200"
       "ok"
     end

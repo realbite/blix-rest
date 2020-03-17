@@ -34,6 +34,10 @@ class RestWorld
       @h[k]
     end
 
+    def body
+      @resp.body
+    end
+
     def data
       @h['data']
     end
@@ -108,8 +112,11 @@ class RestWorld
       str = str[2..-1]
       id  = store[str]
       raise ":#{str} has not been stored" unless id
-
-      "/#{id}"
+      if id[0] == '/'
+        "#{id}"
+      else
+        "/#{id}"
+      end
     end
     # and the query part
     path.gsub /\=(@[a-z0-9_]+)/ do |str|
@@ -156,11 +163,13 @@ class RestWorld
   end
 
   def add_token_to_request
+    return if @_request.include?('token=')
     if @_user
+      token = @_user.get(:token) || "token12345678-#{@_user.get(:login)}"
       @_request = if @_request.include?('?')
-                    @_request + "&token=token12345678-#{@_user.get(:login)}"
+                    @_request + "&token=#{token}"
                   else
-                    @_request + "?token=token12345678-#{@_user.get(:login)}"
+                    @_request + "?token=#{token}"
                   end
     end
   end
@@ -179,11 +188,16 @@ class RestWorld
     env['REMOTE_ADDR'] = '10.0.0.1'
     env['HTTP_COOKIE'] = cookies.join('; ')
     env["HTTP_AUTHORIZATION"] = @_auth if @_auth
+    env["HTTP_HOST"] = @_host if @_host
     env
   end
 
   def request
     RestWorld.request
+  end
+
+  def set_host(name)
+    @_host = name
   end
 
   def set_auth_headers(user)

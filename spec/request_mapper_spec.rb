@@ -57,7 +57,6 @@ module Blix::Rest
     it "should parse a path with multiple variables" do
       blk = lambda{|params| "item:#{params[:prod_id]}/user:#{params[:user_id]}"}
       RequestMapper.add_path(GET,"/products/:prod_id/user/:user_id/clear",{},&blk)
-
       RequestMapper.process(GET,"/products/1234/user/9999/clear").should == "item:1234/user:9999"
       RequestMapper.process(GET,"/products/1234/user/9999").should == nil
 
@@ -123,8 +122,8 @@ module Blix::Rest
 
       RequestMapper.process(GET,"/products/1234/user").should == {"prod_id"=>"1234"}
       RequestMapper.process(GET,"/products/1234/user.json").should == {"prod_id"=>"1234", "format"=>:json}
-      RequestMapper.process(GET,"/products.html/1234/user.xxx").should == {"prod_id"=>"1234", "format"=>:xxx}
-      RequestMapper.process(GET,"/products.html/1234/user.jsonx").should == {"prod_id"=>"1234", "format"=>:jsonx}
+      RequestMapper.process(GET,"/products/1234/user.xxx").should == {"prod_id"=>"1234", "format"=>:xxx}
+      RequestMapper.process(GET,"/products/1234/user.jsonx").should == {"prod_id"=>"1234", "format"=>:jsonx}
 
       RequestMapper.add_path(GET,"/others/:other_id/*",{},&blk)
       RequestMapper.process(GET,"/others/1234/other").should == {"other_id"=>"1234", "wildpath"=>"/other"}
@@ -206,6 +205,21 @@ module Blix::Rest
       RequestMapper.process(GET,"/").should == 'list:{"wildpath"=>"/"}'
     end
 
+    it "should allow an empty wildpath without a slash" do
+      blk = lambda{|params| "list:#{params.to_s}"}
+      RequestMapper.add_path(GET,"/aaa/*",{},&blk)
+      RequestMapper.process(GET,"/aaa/").should == 'list:{"wildpath"=>"/"}'
+      RequestMapper.process(GET,"/aaa").should == 'list:{"wildpath"=>"/"}'
+    end
+
+    it "should allow an empty wildpath after a path variable" do
+      blk = lambda{|params| "list:#{params.to_s}"}
+      RequestMapper.add_path(GET,"/aaa/:name/*",{},&blk)
+      RequestMapper.process(GET,"/aaa/").should == nil
+      RequestMapper.process(GET,"/aaa/xxx/").should == 'list:{"name"=>"xxx", "wildpath"=>"/"}'
+      RequestMapper.process(GET,"/aaa/xxx").should == 'list:{"name"=>"xxx", "wildpath"=>"/"}'
+    end
+
     it "should allow a named wild card in the path" do
       blk = lambda{|params| "list:#{params.to_s}"}
       RequestMapper.add_path(GET,"/aaa",{},&blk)
@@ -215,6 +229,8 @@ module Blix::Rest
       RequestMapper.add_path(GET,"*fullpath",{},&blk)
       RequestMapper.process(GET,"/aaa").should == "list:{}"
       RequestMapper.process(GET,"/aaa/bbb").should == 'list:{"zzz"=>"/bbb"}'
+      RequestMapper.process(GET,"/aaa/bbb/ccc").should == 'list:{"zzz"=>"/bbb/ccc"}'
+      RequestMapper.process(GET,"/aaa/bbb/ccc.jpeg").should == 'list:{"format"=>:jpeg, "zzz"=>"/bbb/ccc"}'
       RequestMapper.process(GET,"/aaa/aaa").should == "list:{}"
       RequestMapper.process(GET,"/zzz/yyyy/xxx").should == 'list:{"fullpath"=>"/zzz/yyyy/xxx"}'
       RequestMapper.process(GET,"/xxx").should == 'list:{"fullpath"=>"/xxx"}'
@@ -224,9 +240,35 @@ module Blix::Rest
     it "should start wildcard path correctly" do
       blk = lambda{|params| params}
       RequestMapper.add_path(GET,"/foo/*",{},&blk)
-      puts RequestMapper.table.inspect
       RequestMapper.process(GET,"/foo/").should == {"wildpath"=>"/"}
+    end
 
+    it "should handle dots in path" do
+      blk = lambda{|params| "list:#{params.to_s}"}
+      RequestMapper.add_path(GET,"/foo/example.com/users",{},&blk)
+      RequestMapper.process(GET,"/foo/example.com/users").should == "list:{}"
+      RequestMapper.add_path(GET,"/foo/example.com",{},&blk)
+      RequestMapper.process(GET,"/foo/example.com").should == "list:{}"
+    end
+
+    it "should handle dots in sections" do
+      blk = lambda{|params| params}
+      RequestMapper.add_path(GET,"/foo/:name/users",{},&blk)
+      RequestMapper.process(GET,"/foo/example.com/users.xxx").should == {"name"=>"example.com","format"=>:xxx}
+      RequestMapper.add_path(GET,"/foo/:name",{},&blk)
+      RequestMapper.process(GET,"/foo/example.com").should == {"name"=>"example","format"=>:com}
+    end
+
+    it "should ignore format when requested" do
+      blk = lambda{|params| params}
+      RequestMapper.add_path(GET,"/foo/:name",{:extension=>false},&blk)
+      RequestMapper.process(GET,"/foo/example.com").should == {"name"=>"example.com"}
+    end
+
+    it "should ignore format with wildpath when requested" do
+      blk = lambda{|params| params}
+      RequestMapper.add_path(GET,"/foo/*name",{:extension=>false},&blk)
+      RequestMapper.process(GET,"/foo/bar/example.com").should == {"name"=>"/bar/example.com"}
     end
 
 

@@ -31,6 +31,10 @@ module Blix
       @_environment ||= ENV['RACK_ENV'] || 'development'
     end
 
+    def self.environment?(val)
+      environment == val.to_s
+    end
+
     def self.environment=(val)
       @_environment = val.to_s
     end
@@ -51,7 +55,7 @@ module Blix
       end
     end
 
-    
+
     class BinaryData < String
       def as_json(*_a)
         { 'base64Binary' => Base64.encode64(self) }

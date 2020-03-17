@@ -13,14 +13,14 @@ Fully extensible through RACK middleware and your own code]
   s.license = 'MIT'
   s.email = ['gems@realitybites.eu']
   s.homepage = 'https://github.com/realbite/blix-rest'
-  
-  
+
+
   s.add_dependency('httpclient')
   s.add_dependency('multi_json')
   s.add_dependency('rack')
-  
+
   s.add_development_dependency('rspec')
- 
+
   s.files = FileList['lib/blix/rest/**/*.rb' ].to_a
   s.files << 'lib/blix/rest.rb'
   s.files << 'lib/blix/utils.rb'

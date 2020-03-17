@@ -1,45 +1,50 @@
-module Blix::Rest
+# frozen_string_literal: true
 
+module Blix::Rest
   class RequestMapperError < StandardError; end
 
   # register routes with this class and then we can match paths to
   # these routes and return an associated block and parameters.
   class RequestMapper
 
-    WILD_PLACEHOLDER = '/'.freeze
-    PATH_SEP         = '/'.freeze
-    STAR_PLACEHOLDER = '*'.freeze
+    WILD_PLACEHOLDER = '/'
+    PATH_SEP         = '/'
+    STAR_PLACEHOLDER = '*'
 
     # the
 
     class TableNode
+
       attr_accessor :blk
       attr_reader   :value
       attr_accessor :opts
       attr_reader   :parameter
+      attr_reader   :children
+      attr_accessor :extract_format
 
       def initialize(name)
         @children = {}
-        if name[0,1] == ':'
+        if name[0, 1] == ':'
           @parameter = name[1..-1].to_sym
           @value     = WILD_PLACEHOLDER
-        elsif name[0,1] == '*'
-          if name[1..-1].empty?
-            @parameter = :wildpath
-          else
-            @parameter = name[1..-1].to_sym
-          end
-          @value     = STAR_PLACEHOLDER
+        elsif name[0, 1] == '*'
+          @parameter = if name[1..-1].empty?
+                         :wildpath
+                       else
+                         name[1..-1].to_sym
+                       end
+          @value = STAR_PLACEHOLDER
         else
-          @value    = name
+          @value = name
         end
+        @extract_format = true
       end
 
       def [](k)
         @children[k]
       end
 
-      def []=(k,v)
+      def []=(k, v)
         @children[k] = v
       end
 
@@ -49,8 +54,8 @@ module Blix::Rest
 
       def set_path_root(root)
         root = root.to_s
-        root = "/" + root if root[0,1] != '/'
-        root = root + '/' if root[-1,1] != '/'
+        root = '/' + root if root[0, 1] != '/'
+        root += '/' if root[-1, 1] != '/'
         @path_root = root
         @path_root_length = @path_root.length - 1
       end
@@ -59,31 +64,41 @@ module Blix::Rest
         @path_root || '/'
       end
 
-      def path_root_length
-        @path_root_length
-      end
+      attr_reader :path_root_length
 
       def full_path(path)
-        path = path[1..-1] if path[0,1] == '/'
+        path = path[1..-1] if path[0, 1] == '/'
         path_root + path
       end
 
       def locations
-        @locations ||= Hash.new {|h,k| h[k] = []}
+        @locations ||= Hash.new { |h, k| h[k] = [] }
       end
 
       def table
         @table ||= compile
       end
 
+      def dump
+        table.each do |k, v|
+          puts k
+          dump_node(v, 1)
+        end
+      end
+
+      def dump_node(item, indent = 0)
+        puts "#{' ' * indent} value=#{item.value.inspect} opts=#{item.opts.inspect} params=#{item.parameter.inspect}"
+        item.children.each_value { |c| dump_node(c, indent + 1) }
+      end
+
       # used for testing only !!
-      def reset(vals=nil)
-        save = [@table && @table.dup, @locations && @locations.dup, @path_root && @path_root.dup, @path_root_length]
+      def reset(vals = nil)
+        save = [@table&.dup, @locations&.dup, @path_root&.dup, @path_root_length]
         if vals
           @table     = vals[0]
           @locations = vals[1]
           @path_root = vals[2]
-          @path_root_length =vals[3]
+          @path_root_length = vals[3]
         else
           @table     = nil
           @locations = nil
@@ -95,22 +110,22 @@ module Blix::Rest
 
       # compile routes into a tree structure for easy lookup
       def compile
-        @table = Hash.new {|h,k| h[k] = TableNode.new("")}
-        locations.each do |verb,routes|
+        @table = Hash.new { |h, k| h[k] = TableNode.new('') }
+        locations.each do |verb, routes|
           routes.each do |info|
-            verb,path,opts,blk = info
+            verb, path, opts, blk = info
             parts = path.split(PATH_SEP)
             current = @table[verb]
-            parts.each_with_index do |section,idx|
+            parts.each_with_index do |section, idx|
               node = TableNode.new(section)
               # check that a wildstar is the last element.
-              if (section[0] == STAR_PLACEHOLDER) && (idx < (parts.length-1))
-                raise RequestMapperError,"do not add a path after the * in #{path}"
+              if (section[0] == STAR_PLACEHOLDER) && (idx < (parts.length - 1))
+                raise RequestMapperError, "do not add a path after the * in #{path}"
               end
 
               # check that wild card match in name
               if current[node.value]
-                if (node.value == WILD_PLACEHOLDER) && (node.parameter !=  current[node.value].parameter)
+                if (node.value == WILD_PLACEHOLDER) && (node.parameter != current[node.value].parameter)
                   raise RequestMapperError, "parameter mismatch in route=#{path}, expected #{current[node.value].parameter} but got #{node.parameter}"
                 end
 
@@ -121,27 +136,28 @@ module Blix::Rest
             end
             current.blk = blk
             current.opts = opts || {}
+            current.extract_format = opts[:extension] if opts.key?(:extension)
           end
         end
         @table
       end
 
       # declare a route
-      def add_path( verb, path, opts = {}, &blk)
-        path = path[1..-1] if path[0,1] == PATH_SEP
-        RequestMapper.locations[verb] << [verb,path,opts,blk]
+      def add_path(verb, path, opts = {}, &blk)
+        path = path[1..-1] if path[0, 1] == PATH_SEP
+        RequestMapper.locations[verb] << [verb, path, opts, blk]
         @table = nil # force recompile
       end
 
       # match a given path to  declared route.
-      def match(verb,path)
-        path = PATH_SEP + path if path[0,1] != PATH_SEP             # ensure a leading slash on path
+      def match(verb, path)
+        path = PATH_SEP + path if path[0, 1] != PATH_SEP # ensure a leading slash on path
 
         path = path[path_root_length..-1] if path_root_length.to_i > 0
         if path
-           path = path[1..-1] if path[0,1] == PATH_SEP              # remove the leading slash
+          path = path[1..-1] if path[0, 1] == PATH_SEP # remove the leading slash
         else
-           return [nil,{},nil]
+          return [nil, {}, nil]
         end
 
         parameters = StringHash.new
@@ -151,69 +167,121 @@ module Blix::Rest
         limit   = parts.length - 1
 
         # handle the root node here
-        if path==""
+        if path == ''
           if current.blk
-             return  [current.blk,parameters,current.opts]
+            return [current.blk, parameters, current.opts]
           elsif (havewild = current[STAR_PLACEHOLDER])
-             parameters[havewild.parameter.to_s] = '/'
-             return  [havewild.blk,parameters,havewild.opts]
+            parameters[havewild.parameter.to_s] = '/'
+            return [havewild.blk, parameters, havewild.opts]
           else
-            return [nil,{},nil]
+            return [nil, {}, nil]
           end
         end
 
-        parts.each_with_index do |section,idx|
-          format  = File.extname(section)
-          section = File.basename(section,format)
+        parts.each_with_index do |section, idx|
+          # first save the last node that we used
+          # before updating the current node.
 
-          parameters['format'] = format[1..-1].to_sym if (idx == limit) && !(format.empty?)
+          last = current # table nodes
 
-          last    = current
-          current = current[section]
+          # check to see if there is a path which includes a format part
+          # only on the last section
+          if idx == limit
+            if last[section]
+              current = last[section]
+            else
+              format  = File.extname(section)
+              base    = File.basename(section, format)
+              current = last[base]
+              if current
+                parameters['format'] = format[1..-1].to_sym # !format.empty?
+                section = base
+               end
+            end
+          else
+            current = last[section]
+          end
 
+          # if current is set here that means that this section matches a fixed
+          # part of the route.
           if current
-            if idx == limit # the last section
+
+            # if this is the last section then we have to decide here if we
+            # have a valid result..
+            # .. if we have a block then fine ..
+            # .. if there is a wildpath foloowing then fine ..
+            # .. otherwise an error !
+
+            if idx == limit # the last section of request
               if current.blk
-                return  [current.blk,parameters,current.opts]
+                return [current.blk, parameters, current.opts]
               elsif (havewild = current[STAR_PLACEHOLDER])
                 parameters[havewild.parameter.to_s] = '/'
-                return  [havewild.blk,parameters,havewild.opts]
+                return [havewild.blk, parameters, havewild.opts]
               else
-                return [nil,{},nil]
+                return [nil, {}, nil]
               end
             end
           else
+
+            # this section is  not part of a static path so
+            # check if we have a path variable first ..
+
             current = last[WILD_PLACEHOLDER]
             if current
-              parameters[current.parameter.to_s] = section
-              if idx == limit # the last section
-                return [current.blk,parameters,current.opts]
+
+              # yes this is a path variable section
+              if idx == limit
+
+                # the last section of request -
+                if current.extract_format
+                  format  = File.extname(section)
+                  base    = File.basename(section, format)
+                  parameters[current.parameter.to_s] = base
+                  parameters['format'] = format[1..-1].to_sym unless format.empty?
+                else
+                  parameters[current.parameter.to_s] = section
+                end
+
+                # check if we have a valid block otherwise see if
+                # a wild path follows.
+
+                if current.blk
+                  return [current.blk, parameters, current.opts]
+                elsif (havewild = current[STAR_PLACEHOLDER])
+                  parameters[havewild.parameter.to_s] = '/'
+                  return [havewild.blk, parameters, havewild.opts]
+                else
+                  return [nil, {}, nil]
+                end
+
+              else
+                parameters[current.parameter.to_s] = section
               end
             else
-              #
               current = last[STAR_PLACEHOLDER]
               if current
                 wildpath = '/' + parts[idx..-1].join('/')
-                wildformat  = File.extname(wildpath)
-                unless wildformat.empty?
-                  wildpath = wildpath[0..-(wildformat.length+1)]
+                wildformat = File.extname(wildpath)
+                unless wildformat.empty? || !current.extract_format
+                  wildpath = wildpath[0..-(wildformat.length + 1)]
                   parameters['format'] = wildformat[1..-1].to_sym
                 end
                 parameters[current.parameter.to_s] = wildpath
-                return [current.blk,parameters,current.opts]
+                return [current.blk, parameters, current.opts]
               else
-                return [nil,{},nil]
+                return [nil, {}, nil]
               end
             end
           end
         end
-        return [nil,{},nil]
+        [nil, {}, nil]
       end
 
       # match a path to a route and call any associated block with the extracted parameters.
-      def process(verb,path)
-        blk, params = match(verb,path)
-        blk && blk.call(params)
+      def process(verb, path)
+        blk, params = match(verb, path)
+        blk&.call(params)
       end
 
       def routes
@@ -222,21 +290,19 @@ module Blix::Rest
           group.each do |route|
             verb = route[0]
             options = route[2]
-            options_string = ""
-            unless options.empty?
-              options_string = " " + options.inspect.to_s
-            end
-            path = "/" + route[1]
-            hash[path] ||={}
+            options_string = String.new
+            options_string = ' ' + options.inspect.to_s unless options.empty?
+            path = '/' + route[1]
+            hash[path] ||= {}
             hash[path][verb] = options_string
           end
         end
         list = hash.to_a
-        list.sort!{|a,b| a[0]<=> b[0]}
-        str = ""
+        list.sort! { |a, b| a[0] <=> b[0] }
+        str = String.new
         list.each do |route|
           pairs = route[1]
-          (HTTP_VERBS +  ['ALL']).each do |verb|
+          (HTTP_VERBS + ['ALL']).each do |verb|
             if route[1].key? verb
               str << verb << "\t" << route[0] << route[1][verb] << "\n"
             end
@@ -246,21 +312,21 @@ module Blix::Rest
         str
       end
 
-
-
     end
+
   end # RequestMapper
 
   def self.set_path_root(*args)
-     RequestMapper.set_path_root( *args )
+    RequestMapper.set_path_root(*args)
+  end
+
+  def self.path_root
+    RequestMapper.path_root
   end
 
   def self.full_path(path)
-     RequestMapper.full_path(path)
+    RequestMapper.full_path(path)
   end
 
-  if ENV['BLIX_REST_ROOT']
-    Rest.set_path_root( ENV['BLIX_REST_ROOT'] )
-  end
-
+  RequestMapper.set_path_root(ENV['BLIX_REST_ROOT']) if ENV['BLIX_REST_ROOT']
 end # Rest

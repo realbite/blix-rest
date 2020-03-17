@@ -28,11 +28,21 @@ Given(/^(.*?) posts ["'](.*?)["'] with (.*?)$/) do |user, path, json|
   send_request('POST',user,path,json)
 end
 
+# doc string version
+Given(/^(.*?) posts ["'](.*?)["'] with$/) do |user, path, json|
+  send_request('POST',user,path,json)
+end
+
 Given(/^(.*?) deletes ["'](.*?)["']$/) do |user, path|
   send_request('DELETE',user,path,nil)
 end
 
 Given(/^(.*?) puts ["'](.*?)["'] with (.*?)$/) do |user, path, json|
+  send_request('PUT',user,path,json)
+end
+
+# doc string version
+Given(/^(.*?) puts ["'](.*?)["'] with$/) do |user, path, json|
   send_request('PUT',user,path,json)
 end
 
@@ -145,6 +155,11 @@ Then(/^the data ["'](.*?)["'] should equal nil$/) do |field|
     data =valid_response.data
   end
   expect(data[field]).to be nil
+end
+
+Then(/^the body should eq ["'](.*?)["']$/) do |val|
+  val.gsub!("\\n","\n")
+  expect(valid_response.body).to eq val
 end
 
 

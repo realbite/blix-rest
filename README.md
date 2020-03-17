@@ -46,7 +46,7 @@ before loading `blix/rest`.
 
 when using oj then you may need to set some default options eg:
 
-  `MultiJson.default_options = {:mode=>:custom, :use_as_json=>true}`  
+  `MultiJson.default_options = {:mode=>:custom, :use_as_json=>true}`
 
 ## NOTE ON PATHS
 
@@ -67,6 +67,17 @@ if there is a more specific path then it will be used first :
 `all '/mypath'` will accept all http_methods but if a more specific handler
    is specified then it will be used first.
 
+
+### Path options
+
+    :accept     : the format or formats to accept eg: :html or [:png, :jpeg]
+    :default    : default format if not derived through oher means.
+    :force      : force response into the given format
+    :query      : derive format from request query (default: false)
+    :extension  : derive format from path extension  (default: true)
+
+
+use `:accept=>:*` in combination with `:force` to accept all request formats.
 
 ## APPLICATION MOUNT POINT
 
@@ -100,6 +111,17 @@ add special headers to your response with eg:
 change the status of a success response with eg:
 
 `set_status(401)`
+
+
+to specify __ALL__ the headers for a given format of response use eg:
+
+    srv = Blix::Rest::Server.new
+    srv.set_custom_headers(:html, 'Content-Type'=>'text/html; charset=utf-8', 'X-OTHER'=>'')
+
+    ...
+    srv.run
+
+remember to always set at least the content type!
 
 ## BASIC AUTH
 
@@ -171,9 +193,26 @@ use the following to accept requests in a special format ..
        "xyz"
     end
 
+## FORMATS
+
+the format of a request is derived from
+
+  1. the `:force` option value if present
+
+  2. the request query `format` parameter if the `:query` option is true
+
+  3. the url extension unless the `:extension` option is false.
+
+  4. the accept header format
+
+  5. the format specified in the `:default` option
+
+  6. `:json`
+
+
 ## Controller
 
-    Blix::Rest::Controller  
+    Blix::Rest::Controller
 
 base class for controllers. within your block handling a particular route you
 have access to a number of methods
@@ -239,9 +278,19 @@ options can include:
 
 the location of your views defaults to `app/views` otherwise set it manually with:
 
+globally eg:
+
     Blix::Rest.set_erb_root ::File.expand_path('../lib/myapp/views',  __FILE__)
 
-the within a controller render your view with.
+or per controller eg:
+
+    class MyController < Blix::Rest::Controller
+
+       erb_dir  ::File.expand_path('../..',  __FILE__)
+
+    end
+
+then within a controller render your view with.
 
     render_erb( "users/index", :layout=>'layouts/main', :locals=>{:name=>"charles"})
 
@@ -294,7 +343,7 @@ now you can use the following in scenarios ........
               | admin | admin |
 
         Given user mary posts "/worlds" with {"name":"narnia"}    [..or gets/puts/deletes]
-        Then store the "id" as "world_id"  
+        Then store the "id" as "world_id"
 
         Given user bob posts "/worlds/:world_id" with  {"the_world_id"::world_id }
 
