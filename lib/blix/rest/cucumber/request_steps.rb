@@ -24,6 +24,11 @@ Given(/^(.*?) gets ["'](.*?)["']( with token)?$/) do |user, path, condition|
   send_request('GET',user,path,nil)
 end
 
+Given(/^(.*?) options ["'](.*?)["']( with token)?$/) do |user, path, condition|
+  path = add_token_to_path(path,@_token) if condition == " with token"
+  send_request('OPTIONS',user,path,nil)
+end
+
 Given(/^(.*?) posts ["'](.*?)["'] with (.*?)$/) do |user, path, json|
   send_request('POST',user,path,json)
 end

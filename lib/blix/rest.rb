@@ -95,8 +95,11 @@ module Blix
     end
 
     class AuthorizationError < StandardError
-      def initialize(message)
+      attr_reader :realm, :type
+      def initialize(message=nil, realm=nil, type=nil)
         super(message || "")
+        @realm = realm || 'rest'
+        @type = type || 'Basic'
       end
     end
   end

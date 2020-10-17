@@ -164,7 +164,6 @@ module Blix::Rest
     end
 
 
-
     it "should document the paths" do
       blk = lambda{|params| "list:#{params.to_s}"}
       RequestMapper.add_path(GET,"/",{},&blk)

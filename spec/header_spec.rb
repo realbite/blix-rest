@@ -36,7 +36,7 @@ module Blix::Rest
 
       @app.set_custom_headers(:html, 'YYY'=>'hello')
       resp = @srv.get('/200header.html')
-      expect(resp.header.length).to eq 3  # adds content length
+      expect(resp.header.length).to eq 2  # no adds content length
       expect(resp.header["XXX"]).to eq "200"
       expect(resp.header["YYY"]).to eq "hello"
     end

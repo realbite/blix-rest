@@ -219,7 +219,6 @@ class RestWorld
     #unless @_current_user=="guest"
     if cookie = @_response.header["Set-Cookie"]
       parts = cookie.split(';')
-      cookies.clear
       cookies << parts[0].strip
     end
     #end
@@ -249,6 +248,8 @@ class RestWorld
     case verb
     when 'GET'
       handle_response(request.get(@_request, rack_request_headers))
+    when 'OPTIONS'
+      handle_response(request.options(@_request, rack_request_headers))
     when 'POST'
       handle_response(request.post(@_request, rack_request_headers.merge(input: @_body)))
     when 'PUT'

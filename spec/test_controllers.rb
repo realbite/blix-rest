@@ -31,11 +31,11 @@ module Blix
       {"aaa"=>lambda{raise}}
     end
 
-    get "/testecho", :accept=>[:json,:html] do
+    get "/testecho", :accept=>[:json,:html, :xml] do
       {"query_params"=>query_params,"path_params"=>path_params,"body_hash"=>body_hash}
     end
 
-    post "/testecho" , :accept=>[:json,:html] do
+    post "/testecho" , :accept=>[:json,:html, :xml] do
       {"query_params"=>query_params,"path_params"=>path_params,"body_hash"=>body_hash}
     end
 

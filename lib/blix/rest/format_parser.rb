@@ -144,8 +144,14 @@ module Blix::Rest
 
     def set_default_headers(headers)
       headers[CACHE_CONTROL] = CACHE_NO_STORE
-      headers[PRAGMA]       = NO_CACHE
-      headers[CONTENT_TYPE] = CONTENT_TYPE_HTML
+      headers[PRAGMA]        = NO_CACHE
+      headers[CONTENT_TYPE]  = CONTENT_TYPE_HTML
+      # headers['X-Frame-Options']        =  'SAMEORIGIN'
+      # headers['X-XSS-Protection']       =  '1; mode=block'
+      # headers['X-Content-Type-Options'] =  'nosniff'
+      # headers['X-Download-Options']     =  'noopen'
+      # headers['X-Permitted-Cross-Domain-Policies'] =  'none'
+      # headers['Referrer-Policy']        =  'strict-origin-when-cross-origin'
     end
 
     def format_error(message)

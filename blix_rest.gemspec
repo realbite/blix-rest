@@ -24,6 +24,7 @@ Fully extensible through RACK middleware and your own code]
   s.files = FileList['lib/blix/rest/**/*.rb' ].to_a
   s.files << 'lib/blix/rest.rb'
   s.files << 'lib/blix/utils.rb'
+  s.files +=  FileList['lib/blix/utils/**/*.rb' ].to_a
   s.files << 'LICENSE'
   s.files << 'README.md'
 

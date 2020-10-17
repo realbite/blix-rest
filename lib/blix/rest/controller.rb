@@ -65,7 +65,7 @@ module Blix::Rest
     end
 
     def form_hash
-      StringHash.new.merge req.POST
+      StringHash.new(req.POST)
     end
 
     def body_hash
@@ -74,7 +74,7 @@ module Blix::Rest
                       else
                         # should we check the content type here?
                         begin
-                          StringHash.new.merge(MultiJson.load(body))
+                          StringHash.new(MultiJson.load(body))
                         rescue StandardError
                           raise ServiceError, "error in data json format/#{body}/"
                         end
@@ -98,7 +98,7 @@ module Blix::Rest
     end
 
     def params
-      @_params ||= StringHash.new.merge(@_query_params).merge(@_path_params)
+      @_params ||= StringHash.new(@_query_params,@_path_params)
     end
 
     def post_params
@@ -174,15 +174,15 @@ module Blix::Rest
     end
 
     # extract the user and login from the basic authentication
-    def get_basic_auth
+    def get_basic_auth(realm=nil)
       data = env['HTTP_AUTHORIZATION']
-      raise AuthorizationError, 'authentication missing' unless data
+      raise AuthorizationError.new('authentication missing',realm) unless data
 
       type = data[0, 5]
       rest = data[6..-1]
 
-      raise  AuthorizationError, 'wrong authentication method' unless type == 'Basic'
-      raise  AuthorizationError, 'username:password missing'   unless rest
+      raise  AuthorizationError.new('wrong authentication method',realm) unless type == 'Basic'
+      raise  AuthorizationError.new('username:password missing',realm)   unless rest
 
       auth_parts = Base64.decode64(rest).split(':')
       login = auth_parts[0]
@@ -231,8 +231,56 @@ module Blix::Rest
       raise ServiceError.new(message, status, headers)
     end
 
-    def auth_error(message = nil)
-      raise AuthorizationError, message
+    def auth_error(*params)
+      if params[0].kind_of?(String)
+          message = params[0]
+          opts = params[1] || {}
+      else
+          message = nil
+          opts = params[-1] || {}
+      end
+      raise AuthorizationError.new(message,opts[:realm], opts[:type])
+    end
+
+    def get_cookie(name)
+      cookie_header = env['HTTP_COOKIE']
+      cookie_length = name.length
+      parts = cookie_header&.split(';')
+      value = nil
+      parts&.reverse&.each do |cookie|
+        cookie.strip!
+        if cookie[0..cookie_length] == name + '='
+          value = cookie[cookie_length + 1..-1]
+          break
+        end
+      end
+      value
+    end
+
+    def store_cookie(name, value, opts={})
+      cookie_text = String.new("#{name}=#{value}")
+      cookie_text << '; Secure'                                  if _opt?(opts,:secure)
+      cookie_text << '; HttpOnly'                                if _opt?(opts,:http)
+      cookie_text << "; HostOnly=#{_opt(opts,:hostOnly)}"        if _opt?(opts,:hostOnly)
+      cookie_text << "; Expires=#{_opt(opts,:expires).httpdate}" if _opt?(opts,:expires)
+      cookie_text << "; Max-Age=#{_opt(opts,:max_age)}"          if _opt?(opts,:max_age)
+      cookie_text << "; Domain=#{_opt(opts,:domain)}"            if _opt?(opts,:domain)
+      cookie_text << "; Path=#{_opt(opts,:path)}"                if _opt?(opts,:path)
+      if policy = _opt(opts,:samesite)
+        cookie_text << '; SameSite=Strict' if policy.to_s.downcase == 'strict'
+        cookie_text << '; SameSite=Lax'    if policy.to_s.downcase == 'lax'
+        cookie_text << '; SameSite=None'   if policy.to_s.downcase == 'none'
+      end
+      @_cookies ||= {}
+      @_cookies[name] = cookie_text
+      # cookie_header = @_response.headers['Set-Cookie']
+      # if cookie_header
+      #   cookie_header = cookie_header << "\n" << cookie_text
+      # else
+      #   cookie_header = cookie_text
+      # end
+      @_response.headers['Set-Cookie'] = @_cookies.values.join("\n")
+      value
     end
 
     # manage session handling --------------------------------------------------
@@ -240,17 +288,7 @@ module Blix::Rest
     # this id can be used to retrieve and data associated
     # with the session_id in eg: a database or a memory hash
     def get_session_id(session_name, opts = {})
-      cookie_header = env['HTTP_COOKIE']
-      cookie_length = session_name.length
-      parts = cookie_header&.split(';')
-      session_id = nil
-      parts&.reverse&.each do |cookie|
-        cookie.strip!
-        if cookie[0..cookie_length] == session_name + '='
-          session_id = cookie[cookie_length + 1..-1]
-          break
-        end
-      end
+      session_id = get_cookie(session_name)
       session_id || refresh_session_id(session_name, opts)
     end
 
@@ -274,20 +312,7 @@ module Blix::Rest
 
     # set the cookie header that stores the session_id on the browser.
     def store_session_id(session_name, session_id, opts = {})
-      cookie_text = String.new("#{session_name}=#{session_id}")
-      cookie_text << '; Secure'                                  if _opt?(opts,:secure)
-      cookie_text << '; HttpOnly'                                if _opt?(opts,:http)
-      cookie_text << "; HostOnly=#{_opt(opts,:hostOnly)}"        if _opt?(opts,:hostOnly)
-      cookie_text << "; Expires=#{_opt(opts,:expires).httpdate}" if _opt?(opts,:expires)
-      cookie_text << "; Max-Age=#{_opt(opts,:max_age)}"          if _opt?(opts,:max_age)
-      cookie_text << "; Domain=#{_opt(opts,:domain)}"            if _opt?(opts,:domain)
-      cookie_text << "; Path=#{_opt(opts,:path)}"                if _opt?(opts,:path)
-      if policy = _opt(opts,:samesite)
-        cookie_text << '; SameSite=Strict' if policy.to_s.downcase == 'strict'
-        cookie_text << '; SameSite=Lax'    if policy.to_s.downcase == 'lax'
-      end
-      add_headers 'Set-Cookie' => cookie_text
-      session_id
+      store_cookie(session_name, session_id, opts)
     end
 
     #----------------------------------------------------------------------------------------------------------
@@ -307,8 +332,8 @@ module Blix::Rest
     def initialize(path_params, _params, req, format, verb, response, server_options)
       @_req = req
       @_env = req.env
-      @_query_params = StringHash.new.merge(req.GET)
-      @_path_params  = StringHash.new.merge(path_params)
+      @_query_params = StringHash.new(req.GET)
+      @_path_params  = StringHash.new(path_params)
       @_format = format
       @_verb = verb
       @_response = response
@@ -371,7 +396,7 @@ module Blix::Rest
 
       def render_erb(name, context, opts = {})
         name        = name.to_s
-        layout_name = opts[:layout]
+        layout_name = opts[:layout] && opts[:layout].to_s
         locals      = opts[:locals]
         path        = opts[:erb_dir] || __erb_path || Controller.erb_root
 
@@ -430,7 +455,7 @@ module Blix::Rest
           app = new(_path_params, _params, _req, _format, verb, _response, server_options)
           begin
             app.before(opts)
-            response = app.instance_eval &blk
+            response = app.instance_eval( &blk )
           rescue
             raise
           ensure
@@ -443,35 +468,35 @@ module Blix::Rest
 
       def get(*a, &b)
         route 'GET', *a, &b
-        end
+      end
 
       def head(*a, &b)
         route 'HEAD', *a, &b
-        end
+      end
 
       def post(*a, &b)
         route 'POST', *a, &b
-        end
+      end
 
       def put(*a, &b)
         route 'PUT', *a, &b
-        end
+      end
 
       def patch(*a, &b)
         route 'PATCH', *a, &b
-        end
+      end
 
       def delete(*a, &b)
         route 'DELETE', *a, &b
-        end
+      end
 
       def all(*a, &b)
         route 'ALL', *a, &b
-        end
+      end
 
       def options(*a, &b)
         route 'OPTIONS', *a, &b
-        end
+      end
 
     end
 

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+require 'thread'
 
 module Blix::Rest
   class RequestMapperError < StandardError; end
@@ -6,6 +7,8 @@ module Blix::Rest
   # register routes with this class and then we can match paths to
   # these routes and return an associated block and parameters.
   class RequestMapper
+
+    @@mutex = Mutex.new
 
     WILD_PLACEHOLDER = '/'
     PATH_SEP         = '/'
@@ -76,7 +79,8 @@ module Blix::Rest
       end
 
       def table
-        @table ||= compile
+        # compile the table in one thread only.
+        @table ||= @@mutex.synchronize{@table ||= compile}
       end
 
       def dump
@@ -147,13 +151,14 @@ module Blix::Rest
         path = path[1..-1] if path[0, 1] == PATH_SEP
         RequestMapper.locations[verb] << [verb, path, opts, blk]
         @table = nil # force recompile
+        true
       end
 
       # match a given path to  declared route.
       def match(verb, path)
         path = PATH_SEP + path if path[0, 1] != PATH_SEP # ensure a leading slash on path
 
-        path = path[path_root_length..-1] if path_root_length.to_i > 0
+        path = path[path_root_length..-1] if (path_root_length.to_i > 0) #&& (path[0,path_root_length] == path_root)
         if path
           path = path[1..-1] if path[0, 1] == PATH_SEP # remove the leading slash
         else
@@ -196,7 +201,7 @@ module Blix::Rest
               if current
                 parameters['format'] = format[1..-1].to_sym # !format.empty?
                 section = base
-               end
+              end
             end
           else
             current = last[section]
@@ -301,7 +306,7 @@ module Blix::Rest
         list.sort! { |a, b| a[0] <=> b[0] }
         str = String.new
         list.each do |route|
-          pairs = route[1]
+          #pairs = route[1]
           (HTTP_VERBS + ['ALL']).each do |verb|
             if route[1].key? verb
               str << verb << "\t" << route[0] << route[1][verb] << "\n"

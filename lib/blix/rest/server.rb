@@ -104,20 +104,33 @@ module Blix::Rest
       end
     end
 
+    def get_format_from_mime(mime)
+      case mime
+      when 'application/json' then :json
+      when 'text/html' then :html
+      when 'application/xml'  then :xml
+      when 'application/xhtml+xml' then :xhtml
+      when '*/*' then :*
+      end
+    end
+
     # attempt to handle mjltiple accept formats here..
     # mime can include '.../*' and '*/*'
     # FIXME
     def get_format_new(env, options)
-      accepted = options[:accept] || [:json]
+      accept = options && options[:accept] || :json
+      accept = [accept].flatten
+
       requested = env['HTTP_ACCEPT'].to_s.split(',')
       requested.each do |request|
-        parts = request.split(';')
-        mime = parts[0]
-        p = get_parser_from_type(mime)
-        fmt = p&._format
-        return fmt if fmt && (accepted.include?(fmt.to_sym) || accepted.include?(fmt.to_s))
+        parts = request.split(';') # the quality part is after a ;
+        mime = parts[0].strip # the mime type
+        try = get_format_from_mime(mime)
+        next unless try
+        return accept[0] || :json if try == :*
+        return try if accept.include?(try)
       end
-      nil
+      nil # no match found
     end
 
     # convert the response to the appropriate format
@@ -138,10 +151,11 @@ module Blix::Rest
       default_format = options && options[:default] && options[:default].to_sym
       force_format = options && options[:force] && options[:force].to_sym
       do_cache = options && options[:cache]
+      clear_cache = options && options[:cache_reset]
 
       query_format = options && options[:query] && req.GET['format'] && req.GET['format'].to_sym
 
-      format = query_format || path_params[:format] || get_format(env) || default_format || :json
+      format = query_format || path_params[:format] || get_format_new(env, options) || default_format || :json
 
       parser = get_parser(force_format || format)
 
@@ -151,9 +165,9 @@ module Blix::Rest
 
       # check for cached response end return with cached response if found.
       #
-      if do_cache && _cache[blk.object_id]
-        response = _cache[blk.object_id]
-        return [response.status, response.headers.merge('X-BLIX-CACHE' => 'CACHED'), [response.content]]
+      if do_cache && _cache["#{verb}|#{format}|#{path}"]
+        response = _cache["#{verb}|#{format}|#{path}"]
+        return [response.status, response.headers.merge('X-Blix-Cache' => 'cached'), [response.content]]
       end
 
       response = Response.new
@@ -172,7 +186,7 @@ module Blix::Rest
         rescue ServiceError => e
           response.set(e.status, parser.format_error(e.message), e.headers)
         rescue AuthorizationError => e
-          response.set(401, parser.format_error(e.to_s), AUTH_HEADER => 'Basic realm="rest"')
+          response.set(401, parser.format_error(e.message), AUTH_HEADER => "#{e.type} realm=\"#{e.realm}\", charset=\"UTF-8\"")
         rescue Exception => e
           response.set(500, parser.format_error('internal error'))
           ::Blix::Rest.logger <<  "----------------------------\n#{$!}\n----------------------------"
@@ -180,7 +194,8 @@ module Blix::Rest
         else # no error
           parser.format_response(value, response)
           # cache response if requested
-          _cache[blk.object_id] = response if do_cache
+          _cache.clear if clear_cache
+          _cache["#{verb}|#{format}|#{path}"] = response if do_cache
         end
 
       else
