@@ -71,7 +71,7 @@ if there is a more specific path then it will be used first :
 ### Path options
 
     :accept     : the format or formats to accept eg: :html or [:png, :jpeg]
-    :default    : default format if not derived through oher means.
+    :default    : default format if not derived through other means.
     :force      : force response into the given format
     :query      : derive format from request query (default: false)
     :extension  : derive format from path extension  (default: true)
