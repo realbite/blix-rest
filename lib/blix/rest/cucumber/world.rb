@@ -20,7 +20,7 @@ class RestWorld
         begin
           @h = MultiJson.load(@resp.body) || {}
         rescue Exception => e
-          puts 'INVALID RESPONSE BODY=>' + @resp.body
+          log 'INVALID RESPONSE BODY=>' + @resp.body
           raise
         end
       else
@@ -93,10 +93,10 @@ class RestWorld
   end
 
   def explain
-    puts "request ==> #{@_verb} #{@_request}"
-    puts "cookies ==> #{cookies.join('; ')}" if cookies.length > 0
-    puts "body ==> #{@_body}" if @_body
-    puts "response ==> #{@_response.inspect}"
+    log "request ==> #{@_verb} #{@_request}"
+    log "cookies ==> #{cookies.join('; ')}" if cookies.length > 0
+    log "body ==> #{@_body}" if @_body
+    log "response ==> #{@_response.inspect}"
   end
 
   def before_parse_path(path); end

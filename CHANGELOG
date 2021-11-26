@@ -1,3 +1,10 @@
+
+# 0.4.1  - allow before/after hooks , add context class 26/11/2021
+# 0.3.1  - allow cache to be disabled 22/09/2021
+# 0.2.3  - template errors to logfile 09/09/2021
+# 0.2.2
+# 0.2.1  - ruby 3 compatability changes
+
 # 0.1.31  - mutex while compiling routes 01/09/2020
 # 0.1.30  - allow :noformat option and only use final format part  03/09/2019
           - allow format in request query

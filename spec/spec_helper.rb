@@ -5,11 +5,12 @@ $:.unshift 'lib'
 ENV['RACK_ENV'] = 'test'
 
 require 'bundler'
-Bundler.require(:default, :test)
+Bundler.require(:default, :development)
 
 # require our application here
 
 require 'blix/rest'
+
 
 # configure rspec
 

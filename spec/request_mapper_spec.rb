@@ -270,6 +270,16 @@ module Blix::Rest
       RequestMapper.process(GET,"/foo/bar/example.com").should == {"name"=>"/bar/example.com"}
     end
 
+    it "should use the default route" do
+      blk = lambda{|params| params}
+      RequestMapper.add_path(GET,"/*",{},&blk)
+      RequestMapper.add_path(GET,"/aaa",{},&blk)
+
+      RequestMapper.process(GET,"/").should == {"wildpath"=>"/"}
+      RequestMapper.process(GET,"/bbb").should == {"wildpath"=>"/bbb"}
+      RequestMapper.process(GET,"/aaa/bbb").should == nil # default only valid till next match
+    end
+
 
 
   end

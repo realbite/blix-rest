@@ -70,3 +70,11 @@ module Blix
 
   end
 end
+
+module SpecialStuff
+    def SpecialStuff.included(mod)
+      mod.before do
+        @out << "special"
+      end
+    end
+  end

@@ -43,6 +43,14 @@ module Blix
       @_logger = val
     end
 
+    def self.cache_disabled
+      @_cache_disabled
+    end
+
+    def self.disable_cache
+      @_cache_disabled = true
+    end
+
     def self.logger
       @_logger ||= begin
         l = Logger.new(STDOUT)

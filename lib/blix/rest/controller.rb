@@ -3,6 +3,7 @@
 require 'base64'
 require 'erb'
 require 'securerandom'
+require 'digest'
 
 module Blix::Rest
   # base class for controllers. within your block handling a particular route you
@@ -21,7 +22,17 @@ module Blix::Rest
   #  to accept requests other thatn json then set :accept=>[:json,:html] as options in the route
   #    eg  post '/myform' :accept=>[:html]              # this will only accept html requests.
 
+  Context = Struct.new(
+    :path_params,
+    :params,
+    :req,
+    :format,
+    :server_options,
+    :response
+  )
+
   class Controller
+
 
     #--------------------------------------------------------------------------------------------------------
     # convenience methods
@@ -126,6 +137,14 @@ module Blix::Rest
 
     def verb
       @_verb
+    end
+
+    def route_parameters
+      @_parameters
+    end
+
+    def response
+      @_response
     end
 
     def method
@@ -315,6 +334,16 @@ module Blix::Rest
       store_cookie(session_name, session_id, opts)
     end
 
+    # perform the before hooks.
+    def __before(*a)
+      self.class._do_before(self, *a)
+    end
+
+    # perform the after hooks
+    def __after(*a)
+      self.class._do_after(self, *a)
+    end
+
     #----------------------------------------------------------------------------------------------------------
     # template methods that can be overwritten
 
@@ -329,15 +358,16 @@ module Blix::Rest
 
     #----------------------------------------------------------------------------------------------------------
 
-    def initialize(path_params, _params, req, format, verb, response, server_options)
-      @_req = req
-      @_env = req.env
+    def initialize(context, _verb, _path, _parameters)
+      @_req            = context.req
+      @_env            = req.env
       @_query_params = StringHash.new(req.GET)
-      @_path_params  = StringHash.new(path_params)
-      @_format = format
-      @_verb = verb
-      @_response = response
-      @_server_options = server_options
+      @_path_params  = StringHash.new(context.path_params)
+      @_format         = context.format
+      @_verb           = _verb
+      @_response       = context.response
+      @_server_options = context.server_options
+      @_parameters     = _parameters
     end
 
     # do not cache templates in development mode
@@ -388,8 +418,8 @@ module Blix::Rest
             text
           end
         rescue Exception
-          puts $!
-          puts $@
+          ::Blix::Rest.logger <<  $!
+          ::Blix::Rest.logger <<  $@
           '*** TEMPLATE ERROR ***'
         end
       end
@@ -421,8 +451,8 @@ module Blix::Rest
             erb.result(bind)
           end
         rescue Exception
-          puts $!
-          puts $@
+          ::Blix::Rest.logger <<  $!
+          ::Blix::Rest.logger <<  $@
           '*** TEMPLATE ERROR ***'
         end
       end
@@ -448,18 +478,21 @@ module Blix::Rest
       end
 
       def route(verb, path, opts = {}, &blk)
-        proc = lambda do |_path_params, _params, _req, _format, _response, server_options|
+        proc = lambda do |context|
           unless opts[:force] && (opts[:accept] == :*)
-            check_format(opts[:accept], _format)
+            check_format(opts[:accept], context.format)
           end
-          app = new(_path_params, _params, _req, _format, verb, _response, server_options)
+          app = new(context, verb, path, opts)
           begin
             app.before(opts)
-            response = app.instance_eval( &blk )
+            app.__before
+            context.response = app.instance_eval( &blk )
           rescue
             raise
           ensure
-            app.after(opts, response)
+            app.__after
+            app.after(opts, context.response)
+            context.response
           end
         end
 
@@ -496,6 +529,45 @@ module Blix::Rest
 
       def options(*a, &b)
         route 'OPTIONS', *a, &b
+      end
+
+
+      def _before_hooks
+        @_before_hooks ||= {}
+      end
+
+      def _after_hooks
+        @_after_hooks ||= {}
+      end
+
+      def _do_before(ctx, *a)
+        superclass._do_before(ctx, *a) if superclass.respond_to? :_do_before
+        _before_hooks.each_value{ |h| ctx.instance_eval(&h) }
+      end
+
+      def _do_after(ctx, *a)
+        _after_hooks.each_value{ |h| ctx.instance_eval(&h) }
+        superclass._do_after(ctx, *a) if superclass.respond_to? :_do_after
+      end
+
+      # define a before hook for a controller. only one hook can be defined per
+      # controller in a single source file.
+      def before(&block)
+        if block
+          file = block.source_location[0]
+          warn("warning: before hook already defined in #{file}") if _before_hooks[file]
+          _before_hooks[file] = block
+        end
+      end
+
+      # define an after hook for a controller. only one hook can be defined per
+      # controller in a single source file.
+      def after(&block)
+        if block
+          file = block.source_location[0]
+          warn("warning: after hook already defined in #{file}") if _after_hooks[file]
+          _after_hooks[file] = block
+        end
       end
 
     end

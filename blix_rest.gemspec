@@ -20,7 +20,7 @@ Fully extensible through RACK middleware and your own code]
   s.add_dependency('rack')
 
   s.add_development_dependency('rspec')
-
+  s.add_development_dependency('pry')
   s.files = FileList['lib/blix/rest/**/*.rb' ].to_a
   s.files << 'lib/blix/rest.rb'
   s.files << 'lib/blix/utils.rb'

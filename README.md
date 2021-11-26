@@ -252,6 +252,24 @@ to accept requests other than json then set `:accept=>[:json,:html]` as options 
 
 eg  `post '/myform' :accept=>[:html]      # this will only accept html requests.`
 
+### Hooks
+
+a before or after hook can be defined on a controller. Only define the hook once
+for a given controller per source file. A hook included from another source file
+is ok though.
+
+    class MyController < Blix::Rest::Controller
+
+      before do
+        ...
+      end
+
+      after do
+        ...
+      end
+
+    end
+
 ### Sessions
 
 the following methods are available in the controller for managing sessions.

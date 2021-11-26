@@ -150,8 +150,8 @@ module Blix::Rest
 
       default_format = options && options[:default] && options[:default].to_sym
       force_format = options && options[:force] && options[:force].to_sym
-      do_cache = options && options[:cache]
-      clear_cache = options && options[:cache_reset]
+      do_cache     = options && options[:cache] && !Blix::Rest.cache_disabled
+      clear_cache  = options && options[:cache_reset]
 
       query_format = options && options[:query] && req.GET['format'] && req.GET['format'].to_sym
 
@@ -182,7 +182,8 @@ module Blix::Rest
 
         begin
           params = env['params']
-          value  = blk.call(path_params, params, req, format, response, @_options)
+          context = Context.new(path_params, params, req, format,  @_options, response)
+          value  = blk.call(context)
         rescue ServiceError => e
           response.set(e.status, parser.format_error(e.message), e.headers)
         rescue AuthorizationError => e
