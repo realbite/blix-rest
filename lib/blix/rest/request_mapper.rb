@@ -55,6 +55,7 @@ module Blix::Rest
 
     class << self
 
+      # the root always starts with '/' and finishes with '/'
       def set_path_root(root)
         root = root.to_s
         root = '/' + root if root[0, 1] != '/'
@@ -67,11 +68,21 @@ module Blix::Rest
         @path_root || '/'
       end
 
-      attr_reader :path_root_length
+      def path_root_length
+        @path_root_length.to_i
+      end
 
       def full_path(path)
         path = path[1..-1] if path[0, 1] == '/'
         path_root + path
+      end
+
+      # ensure that absolute path is the  full path
+      def ensure_full_path(path)
+        if path[0, 1] == '/' && (path_root_length>0) && path[0, path_root_length] != path_root[0, path_root_length]
+          path = path_root + path[1..-1]
+        end
+        path
       end
 
       def locations

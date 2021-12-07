@@ -280,6 +280,17 @@ module Blix::Rest
       RequestMapper.process(GET,"/aaa/bbb").should == nil # default only valid till next match
     end
 
+    it "should ensure the full path" do
+      RequestMapper.ensure_full_path('xxx').should == 'xxx'
+      RequestMapper.ensure_full_path('/xxx').should == '/xxx'
+      RequestMapper.set_path_root('foo')
+      RequestMapper.ensure_full_path('xxx').should == 'xxx'
+      RequestMapper.ensure_full_path('/xxx').should == '/foo/xxx'
+      RequestMapper.ensure_full_path('foo').should == 'foo'
+      RequestMapper.ensure_full_path('/foo').should == '/foo'
+      RequestMapper.ensure_full_path('/foo/aaa').should == '/foo/aaa'
+    end
+
 
 
   end

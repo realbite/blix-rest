@@ -17,8 +17,23 @@ module Blix::Rest
       @_options = opts
     end
 
+    # options passed to the server
+    def _options
+      @_options
+    end
+
+
+    # the object serving as a cache
     def _cache
-      @_cache ||= {}
+      @_cache ||= begin
+        obj = _options[:cache] || _options['cache']
+        if obj
+          raise "cache must be a subclass of Blix::Rest::Cache" unless obj.is_a?(Cache)
+          obj
+        else
+          MemoryCache.new
+        end
+      end
     end
 
     def extract_parsers_from_options(opts)
@@ -34,7 +49,6 @@ module Blix::Rest
     def set_custom_headers(format, headers)
       parser = get_parser(format)
       raise "parser not found for custom headers format=>#{format}" unless parser
-
       parser.__custom_headers = headers
     end
 
@@ -54,6 +68,7 @@ module Blix::Rest
       parser._types.each { |t| @_mime_types[t.downcase] = parser } # register each of the mime types
     end
 
+    # retrieve parameters from the http request
     def retrieve_params(env)
       post_params = {}
       body        = ''
@@ -104,6 +119,7 @@ module Blix::Rest
       end
     end
 
+    # determine standard format from http mime type
     def get_format_from_mime(mime)
       case mime
       when 'application/json' then :json
@@ -138,6 +154,7 @@ module Blix::Rest
       parser
     end
 
+    # the call function is the interface with the rack framework
     def call(env)
       req = Rack::Request.new(env)
 
@@ -182,7 +199,7 @@ module Blix::Rest
 
         begin
           params = env['params']
-          context = Context.new(path_params, params, req, format,  @_options, response)
+          context = Context.new(path_params, params, req, format, response, self)
           value  = blk.call(context)
         rescue ServiceError => e
           response.set(e.status, parser.format_error(e.message), e.headers)

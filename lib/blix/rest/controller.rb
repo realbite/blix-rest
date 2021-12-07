@@ -27,8 +27,8 @@ module Blix::Rest
     :params,
     :req,
     :format,
-    :server_options,
-    :response
+    :response,
+    :server
   )
 
   class Controller
@@ -44,6 +44,14 @@ module Blix::Rest
     # options that were passed to the server at create time.
     def server_options
       @_server_options
+    end
+
+    def server_cache
+      @_server_cache
+    end
+
+    def server_cache_get(key)
+      server_cache[key] ||= yield if block_given?
     end
 
     def logger
@@ -166,7 +174,7 @@ module Blix::Rest
     end
 
     def redirect(path, status = 302)
-      raise ServiceError.new(nil, status, 'Location' => path)
+      raise ServiceError.new(nil, status, 'Location' => RequestMapper.ensure_full_path(path))
     end
 
     alias redirect_to redirect
@@ -366,8 +374,9 @@ module Blix::Rest
       @_format         = context.format
       @_verb           = _verb
       @_response       = context.response
-      @_server_options = context.server_options
+      @_server_options = context.server._options
       @_parameters     = _parameters
+      @_server_cache   = context.server._cache
     end
 
     # do not cache templates in development mode
