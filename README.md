@@ -218,31 +218,33 @@ base class for controllers. within your block handling a particular route you
 have access to a number of methods
 
 
-    env            : the request environment hash
-    method         : the request method lowercase( 'get'/'post' ..)
-    req            : the rack request
-    body           : the request body as a string
-    query_params   : a hash of parameters as passed in the url as parameters
-    path_params    : a hash of parameters constructed from variable parts of the path
-    post_params    : a hash of parameters passed in the body of the request
-    params         : all the params combined
-    user           : the user making this request ( or nil if
-    format         : the format the response should be in :json or :html
-    before         : before hook ( opts ) - remember to add 'super' as first line !!!
-    after          : after hook (opts,response)- remember to add 'super' as first line !!!
-    proxy          : forward the call to another service (service,path, opts={}) , :include_query=>true/false
-    session        : req.session
-    redirect       : (path, status=302) redirect to another url.
-    request_ip     : the ip of the request
-    render_erb     : (template_name [,:layout=>name])
-    path_for       : (path) give the correct path for an internal path
-    url_for        : (path) give the full url for an internal path
-    h              : escape html string to avoid XSS
-    escape_javascript : escape  a javascript string
-    server_options : options as passed to server at create time
-    mode_test?        : test mode ?
-    mode_production?  : production mode ?
-    mode_development? : development mode?
+    env                : the request environment hash
+    method             : the request method lowercase( 'get'/'post' ..)
+    req                : the rack request
+    body               : the request body as a string
+    query_params       : a hash of parameters as passed in the url as parameters
+    path_params        : a hash of parameters constructed from variable parts of the path
+    post_params        : a hash of parameters passed in the body of the request
+    params             : all the params combined
+    user               : the user making this request ( or nil if
+    format             : the format the response should be in :json or :html
+    before             : before hook ( opts ) - remember to add 'super' as first line !!!
+    after              : after hook (opts,response)- remember to add 'super' as first line !!!
+    proxy              : forward the call to another service (service,path, opts={}) , :include_query=>true/false
+    session            : req.session
+    redirect           : (path, status=302) redirect to another url.
+    request_ip         : the ip of the request
+    render_erb         : (template_name [,:layout=>name])
+    server_cache       : get the server cache object
+    server_cache_get   : retrieve/store value in cache
+    path_for           : (path) give the correct path for an internal path
+    url_for            : (path) give the full url for an internal path
+    h                  : escape html string to avoid XSS
+    escape_javascript  : escape  a javascript string
+    server_options     : options as passed to server at create time
+    mode_test?         : test mode ?
+    mode_production?   : production mode ?
+    mode_development?  : development mode?
 
 
     get_session_id(session_name, opts={}) :
@@ -270,6 +272,27 @@ is ok though.
 
     end
 
+
+#### manipulate the route path or options
+
+the `before_route` hook can be used to modify the path or options of a route.
+
+*NOTE* ! when manipulating the path you have to modify the string object in place.
+
+the verb can not be modified
+
+example:
+
+    class MyController < Blix::Rest::Controller
+
+      before_route do |verb, path, opts|
+        opts[:level] = :visitor unless opts[:level]
+        path.prepend('/') unless path[0] == '/'
+        path.prepend('/app') unless path[0, 4] == '/app'
+      end
+      ...
+    end
+
 ### Sessions
 
 the following methods are available in the controller for managing sessions.
@@ -290,7 +313,74 @@ options can include:
     :samesite =>:lax     # use lax x-site policy
 
 
+## Cache
 
+
+the server has a cache which can also be used for storing your own data.
+
+within a controller access the controller with `server_cache` which returns the
+cache object.
+
+cache object methods:
+
+    get(key)        # return value from the cache or nil
+    set(key,value)  # set a value in the cache
+    key?(key)       # is a key present in the cache
+    delete(key)     # delete a key from the cache
+    clear           # delete all keys from the cache.
+
+there is also a `server_cache_get` method.
+
+    server_cache_get(key){ action }
+
+get the value from the cache. If the key is missing in the cache then perform
+the action in the provided block and store the result in the cache.
+
+the default cache is just a ruby hash in memory. Pass a custom cache to
+when creating a server with the `:cache` parameter.
+
+    class MyCache < Blix::Rest::Cache
+       def get(key)
+          ..
+       end
+
+       def set(key,value)
+         ..
+       end
+
+       def key?(key)
+        ..
+       end
+
+       def delete(key)
+         ..
+       end
+
+       def clear
+         ..
+       end
+     end
+
+     cache = MyCache.new
+
+     app = Blix::Rest::Server.new(:cache=>cache)
+
+there is a redis cache already defined:
+
+    require 'blix/rest/redis_cache'
+
+    cache = MyCache.new(:expire_secs=>60*60*24) # expire after 1 day
+    run Blix::Rest::Server.new(:cache=>cache)
+
+
+### automatically cache server responses
+
+add  `:cache=>true` to your route options in order to cache this route.
+
+add `:cache_reset=>true` to your route options if the cache should be cleared when
+calling this route.
+
+the cache is not used in development/testmode , only in production mode.
 
 ## Views
 

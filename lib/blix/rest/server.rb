@@ -182,8 +182,7 @@ module Blix::Rest
 
       # check for cached response end return with cached response if found.
       #
-      if do_cache && _cache["#{verb}|#{format}|#{path}"]
-        response = _cache["#{verb}|#{format}|#{path}"]
+      if do_cache && ( response = _cache["#{verb}|#{format}|#{path}"] )
         return [response.status, response.headers.merge('X-Blix-Cache' => 'cached'), [response.content]]
       end
 

@@ -486,7 +486,15 @@ module Blix::Rest
         raise ServiceError, 'invalid format for this request' unless accept.index format
       end
 
+      def _do_route_hook(verb, path, opts)
+        if @_route_hook
+          superclass._do_route_hook(verb, path, opts) if superclass.respond_to? :_do_route_hook
+          @_route_hook.call(verb, path, opts)
+        end
+      end
+
       def route(verb, path, opts = {}, &blk)
+        _do_route_hook(verb.dup, path, opts)
         proc = lambda do |context|
           unless opts[:force] && (opts[:accept] == :*)
             check_format(opts[:accept], context.format)
@@ -538,6 +546,10 @@ module Blix::Rest
 
       def options(*a, &b)
         route 'OPTIONS', *a, &b
+      end
+
+      def before_route(&b)
+        @_route_hook = b if b
       end
 
 

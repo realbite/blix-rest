@@ -166,6 +166,25 @@ module Blix::Rest
       expect(n.out).to eq "hello againspecial"
     end
 
+    it "should modify path/options in route hook" do
+      #RequestMapper.reset
+      BaseController.before_route{|verb,path, options| path.prepend("/foo"); options[:foo]='bar' }
+      BaseController.route('GET','/admin',{:accept=>:html}){}
+      l = RequestMapper.locations["GET"][-1]
+      expect(l[0]).to eq 'GET'
+      expect(l[1]).to eq 'foo/admin'
+      expect(l[2]).to eq( {:accept=>:html, :foo=>'bar'})
+
+      NewController.before_route{|verb,path, options| path.prepend("/new"); options[:xxx]='yyy' }
+      NewController.route('GET','/orders',{:accept=>:json}){}
+      l = RequestMapper.locations["GET"][-1]
+      expect(l[0]).to eq 'GET'
+      expect(l[1]).to eq 'new/foo/orders'
+      expect(l[2]).to eq( {:accept=>:json, :foo=>'bar', :xxx=>'yyy'})
+      BaseController.before_route(){1}
+      NewController.before_route(){1}
+    end
+
   end
 
 end

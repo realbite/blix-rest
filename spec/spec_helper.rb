@@ -5,7 +5,7 @@ $:.unshift 'lib'
 ENV['RACK_ENV'] = 'test'
 
 require 'bundler'
-Bundler.require(:default, :development)
+#Bundler.require(:default, :development)
 
 # require our application here
 
