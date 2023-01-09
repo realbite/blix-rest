@@ -1,4 +1,9 @@
+# 0.5.2  - return 404 if no route and invalid parser 25/12/2022
+         - fix cached response bug!
+# 0.5.1  - add send_data method and RawResponse exception 26/11/2022
 
+# 0.4.3  - RawJsonString is subclass of String 01/06/2022
+# 0.4.2  - check wildcard before checking all route 30/12/2021
 # 0.4.1  - allow before/after hooks , add context class 26/11/2021
 # 0.3.1  - allow cache to be disabled 22/09/2021
 # 0.2.3  - template errors to logfile 09/09/2021

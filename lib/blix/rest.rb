@@ -1,6 +1,7 @@
 require 'base64'
 require 'logger'
 require 'time'
+require 'cgi'
 
 module Blix
   module Rest
@@ -75,13 +76,10 @@ module Blix
     end
 
     # interpret payload string as json
-    class RawJsonString
-      def initialize(str)
-        @str = str
-      end
+    class RawJsonString < String
 
       def as_json(*_a)
-        @str
+        self
       end
 
       def to_json(*a)
@@ -98,6 +96,17 @@ module Blix
       def initialize(message, status = nil, headers = nil)
         super(message || "")
         @status = status || 406
+        @headers = headers
+      end
+    end
+
+    class RawResponse < StandardError
+      attr_reader :status
+      attr_reader :headers
+
+      def initialize(message, status = nil, headers = nil)
+        super(message || "")
+        @status = status
         @headers = headers
       end
     end

@@ -189,9 +189,18 @@ use the following to accept requests in a special format ..
 
     get '/custom', :accept=>:xyz, :force=>:raw do
        add_headers 'Content-Type'=>'text/xyz'
-
        "xyz"
     end
+
+
+Alternatively it is possible to raise a RawResponse:
+
+    add_headers 'Content-Type'=>'text/xyz'
+    raise RawResponse, 'xyz'
+
+or with status and headers:
+
+    raise RawResponse.new('xyz', 123, 'Content-Type'=>'text/xyz')
 
 ## FORMATS
 
@@ -245,7 +254,11 @@ have access to a number of methods
     mode_test?         : test mode ?
     mode_production?   : production mode ?
     mode_development?  : development mode?
-
+    send_data          : send raw data (data, options )
+                            [:type=>mimetype]
+                            [:filename=>name]
+                            [:disposition=>inline|attachment]
+                            [:status=>234]
 
     get_session_id(session_name, opts={}) :
     refresh_session_id(session_name, opts={}) :
@@ -369,7 +382,7 @@ there is a redis cache already defined:
 
     require 'blix/rest/redis_cache'
 
-    cache = MyCache.new(:expire_secs=>60*60*24) # expire after 1 day
+    cache = Blix::Rest::RedisCache.new(:expire_secs=>60*60*24) # expire after 1 day
     run Blix::Rest::Server.new(:cache=>cache)
 
 

@@ -228,12 +228,12 @@ module Blix::Rest
             # .. if there is a wildpath foloowing then fine ..
             # .. otherwise an error !
 
-            if idx == limit # the last section of request
+            if idx == limit # the last section of path
               if current.blk
                 return [current.blk, parameters, current.opts]
               elsif (havewild = current[STAR_PLACEHOLDER])
                 parameters[havewild.parameter.to_s] = '/'
-                return [havewild.blk, parameters, havewild.opts]
+                return [havewild.blk, parameters, havewild.opts, true]
               else
                 return [nil, {}, nil]
               end
@@ -266,7 +266,7 @@ module Blix::Rest
                   return [current.blk, parameters, current.opts]
                 elsif (havewild = current[STAR_PLACEHOLDER])
                   parameters[havewild.parameter.to_s] = '/'
-                  return [havewild.blk, parameters, havewild.opts]
+                  return [havewild.blk, parameters, havewild.opts, true]
                 else
                   return [nil, {}, nil]
                 end
@@ -284,7 +284,7 @@ module Blix::Rest
                   parameters['format'] = wildformat[1..-1].to_sym
                 end
                 parameters[current.parameter.to_s] = wildpath
-                return [current.blk, parameters, current.opts]
+                return [current.blk, parameters, current.opts, true]
               else
                 return [nil, {}, nil]
               end

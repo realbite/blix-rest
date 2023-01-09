@@ -72,16 +72,16 @@ module Blix::Rest
     def format_response(value, response)
       if value.is_a?(RawJsonString)
         response.content = if _options[:nodata]
-                             value.to_s
+                             [value.to_s]
                            else
-                             "{\"data\":#{value}}"
+                             ["{\"data\":#{value}}"]
                            end
       else
         begin
           response.content = if _options[:nodata]
-                               MultiJson.dump(value)
+                               [MultiJson.dump(value)]
                              else
-                               MultiJson.dump('data' => value)
+                               [MultiJson.dump('data' => value)]
                            end
         rescue Exception => e
           ::Blix::Rest.logger << e.to_s
@@ -107,7 +107,8 @@ module Blix::Rest
     end
 
     def format_response(value, response)
-      response.content = value.to_s
+      value = [value.to_s] unless value.respond_to?(:each)
+      response.content = value
     end
 
   end
@@ -121,8 +122,8 @@ module Blix::Rest
 
     def set_default_headers(headers)
       headers[CACHE_CONTROL] = CACHE_NO_STORE
-      headers[PRAGMA]       = NO_CACHE
-      headers[CONTENT_TYPE] = CONTENT_TYPE_XML
+      headers[PRAGMA]        = NO_CACHE
+      headers[CONTENT_TYPE]  = CONTENT_TYPE_XML
     end
 
     def format_error(message)
@@ -130,7 +131,7 @@ module Blix::Rest
     end
 
     def format_response(value, response)
-      response.content = value.to_s # FIXME
+      response.content = [value.to_s]
     end
 
   end
@@ -166,7 +167,7 @@ module Blix::Rest
     end
 
     def format_response(value, response)
-      response.content = value.to_s
+      response.content = [value.to_s]
     end
 
   end

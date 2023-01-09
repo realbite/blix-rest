@@ -160,10 +160,13 @@ module Blix::Rest
 
       verb            = env['REQUEST_METHOD']
       path            = req.path
+      path  = CGI.unescape(path).gsub('+',' ') unless _options[:unescape] == false
 
-      blk, path_params, options = RequestMapper.match(verb, path)
+      blk, path_params, options, is_wild = RequestMapper.match(verb, path)
 
-      blk, path_params, options = RequestMapper.match('ALL', path) unless blk
+      match_all = RequestMapper.match('ALL', path) unless blk && !is_wild
+      blk, path_params, options = match_all if match_all && match_all[0] # override
+
 
       default_format = options && options[:default] && options[:default].to_sym
       force_format = options && options[:force] && options[:force].to_sym
@@ -176,39 +179,45 @@ module Blix::Rest
 
       parser = get_parser(force_format || format)
 
-      return [406, {}, ["Invalid Format: #{format}"]] unless parser
+      unless parser
+        if blk
+          return [406, {}, ["Invalid Format: #{format}"]]
+        else
+          return [404, {}, ["Invalid Url"]]
+        end
+      end
 
       parser._options = options
 
       # check for cached response end return with cached response if found.
       #
       if do_cache && ( response = _cache["#{verb}|#{format}|#{path}"] )
-        return [response.status, response.headers.merge('X-Blix-Cache' => 'cached'), [response.content]]
+        return [response.status, response.headers.merge('X-Blix-Cache' => 'cached'), response.content]
       end
 
       response = Response.new
-
-      if parser.__custom_headers
-        response.headers.merge! parser.__custom_headers
-      else
-        parser.set_default_headers(response.headers)
-      end
 
       if blk
 
         begin
           params = env['params']
-          context = Context.new(path_params, params, req, format, response, self)
+          context = Context.new(path_params, params, req, format, response, verb, self)
           value  = blk.call(context)
         rescue ServiceError => e
+          set_default_headers(parser,response)
           response.set(e.status, parser.format_error(e.message), e.headers)
+        rescue RawResponse => e
+          response.set(e.status, e.message, e.headers)
         rescue AuthorizationError => e
+          set_default_headers(parser,response)
           response.set(401, parser.format_error(e.message), AUTH_HEADER => "#{e.type} realm=\"#{e.realm}\", charset=\"UTF-8\"")
         rescue Exception => e
+          set_default_headers(parser,response)
           response.set(500, parser.format_error('internal error'))
           ::Blix::Rest.logger <<  "----------------------------\n#{$!}\n----------------------------"
           ::Blix::Rest.logger <<  "----------------------------\n#{$@}\n----------------------------"
         else # no error
+          set_default_headers(parser,response)
           parser.format_response(value, response)
           # cache response if requested
           _cache.clear if clear_cache
@@ -218,7 +227,16 @@ module Blix::Rest
       else
         response.set(404, parser.format_error('Invalid Url'))
       end
-      [response.status, response.headers, [response.content]]
+
+      [response.status, response.headers, response.content]
+    end
+
+    def set_default_headers(parser,response)
+      if parser.__custom_headers
+        response.headers.merge! parser.__custom_headers
+      else
+        parser.set_default_headers(response.headers)
+      end
     end
 
   end

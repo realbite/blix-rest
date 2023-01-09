@@ -28,6 +28,7 @@ module Blix::Rest
     :req,
     :format,
     :response,
+    :method,
     :server
   )
 
@@ -147,6 +148,10 @@ module Blix::Rest
       @_verb
     end
 
+    def method
+      @_method
+    end
+
     def route_parameters
       @_parameters
     end
@@ -258,6 +263,19 @@ module Blix::Rest
       raise ServiceError.new(message, status, headers)
     end
 
+    # send data to browser as attachment
+    def send_data(data, opts = {})
+      add_headers 'Content-Type'=> opts[:type] || 'application/octet-stream'
+      if opts[:filename]
+        add_headers 'Content-Disposition'=>'attachment;filename='+ opts[:filename]
+      elsif opts[:disposition] == 'attachment'
+        add_headers 'Content-Disposition'=>'attachment'
+      elsif opts[:disposition] == 'inline'
+        add_headers 'Content-Disposition'=>'inline'
+      end
+      raise RawResponse.new(data, opts[:status] || 200)
+    end
+
     def auth_error(*params)
       if params[0].kind_of?(String)
           message = params[0]
@@ -367,6 +385,7 @@ module Blix::Rest
     #----------------------------------------------------------------------------------------------------------
 
     def initialize(context, _verb, _path, _parameters)
+      @_context        = context
       @_req            = context.req
       @_env            = req.env
       @_query_params = StringHash.new(req.GET)
@@ -377,6 +396,15 @@ module Blix::Rest
       @_server_options = context.server._options
       @_parameters     = _parameters
       @_server_cache   = context.server._cache
+      @_method         = context.method
+    end
+
+    def to_s
+      "<#{self.class.to_s}:#{object_id}>"
+    end
+
+    def inspect
+      to_s
     end
 
     # do not cache templates in development mode
@@ -494,6 +522,7 @@ module Blix::Rest
       end
 
       def route(verb, path, opts = {}, &blk)
+        path = String.new(path)  # in case frozen.
         _do_route_hook(verb.dup, path, opts)
         proc = lambda do |context|
           unless opts[:force] && (opts[:accept] == :*)

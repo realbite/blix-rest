@@ -18,7 +18,7 @@ module Blix::Rest
 
     def set(status,content=nil,headers=nil)
       @status = status if status
-      @content = String.new(content) if content
+      @content = [String.new(content)] if content
       @headers.merge!(headers) if headers
     end
 

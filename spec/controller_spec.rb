@@ -168,7 +168,7 @@ module Blix::Rest
 
     it "should modify path/options in route hook" do
       #RequestMapper.reset
-      BaseController.before_route{|verb,path, options| path.prepend("/foo"); options[:foo]='bar' }
+      BaseController.before_route{|verb,path, options| path.prepend("/foo"); options[:foo]='bar'; verb.replace('PUT') }
       BaseController.route('GET','/admin',{:accept=>:html}){}
       l = RequestMapper.locations["GET"][-1]
       expect(l[0]).to eq 'GET'
