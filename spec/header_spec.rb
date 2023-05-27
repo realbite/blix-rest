@@ -19,26 +19,26 @@ module Blix::Rest
 
     it "should add headers to 200 response" do
       resp = @srv.get('/200header')
-      expect(resp.header["XXX"]).to eq "200"
+      expect(resp.headers["XXX"]).to eq "200"
     end
 
     it "should add headers to 302 response" do
       resp = @srv.get('/302header')
-      expect(resp.header["XXX"]).to eq "302"
+      expect(resp.headers["XXX"]).to eq "302"
     end
 
     it "should add headers to error response" do
       resp = @srv.get('/406header')
-      expect(resp.header["XXX"]).to eq "406"
+      expect(resp.headers["XXX"]).to eq "406"
     end
 
     it "should add custom headers" do
 
       @app.set_custom_headers(:html, 'YYY'=>'hello')
       resp = @srv.get('/200header.html')
-      expect(resp.header.length).to eq 2  # no adds content length
-      expect(resp.header["XXX"]).to eq "200"
-      expect(resp.header["YYY"]).to eq "hello"
+      expect(resp.headers.length).to eq 2  # no adds content length
+      expect(resp.headers["XXX"]).to eq "200"
+      expect(resp.headers["YYY"]).to eq "hello"
     end
 
 

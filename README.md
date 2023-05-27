@@ -251,6 +251,7 @@ have access to a number of methods
     h                  : escape html string to avoid XSS
     escape_javascript  : escape  a javascript string
     server_options     : options as passed to server at create time
+    logger             : system logger
     mode_test?         : test mode ?
     mode_production?   : production mode ?
     mode_development?  : development mode?
@@ -394,6 +395,10 @@ add `:cache_reset=>true` to your route options if the cache should be cleared wh
 calling this route.
 
 the cache is not used in development/testmode , only in production mode.
+
+### IMPORTANT - DO NOT CACHE SESSION KEYS AND OTHER SPECIFIC DATA IN CACHE
+
+only cache pages with **HEADERS** and **CONTENT** that is not user specific.
 
 ## Views
 

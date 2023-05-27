@@ -1,3 +1,14 @@
+# 0.7.2   - initialize controller with _setup to leave initialize method free for
+             subclasses.  27/05/2023
+
+# 0.7.1   - controller path method returns internal path
+
+# 0.6.2   - allow raw response to respond to call
+
+# 0.6.1   - update for rack 3.0
+          - downcase all headers for rack 3.0
+          - remove first from @app in cucumber RestWorld
+
 # 0.5.2  - return 404 if no route and invalid parser 25/12/2022
          - fix cached response bug!
 # 0.5.1  - add send_data method and RawResponse exception 26/11/2022

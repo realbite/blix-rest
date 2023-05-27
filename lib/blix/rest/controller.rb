@@ -80,8 +80,18 @@ module Blix::Rest
       #      env['rack.input'].rewindreq.POST #env["body"]
     end
 
+    # ovverride the path method to return the internal path.
     def path
-      req.path
+      p = req.path
+      p = '/' + p if p[0, 1] != '/' # ensure a leading slash on path
+      idx = RequestMapper.path_root_length
+      if idx > 0
+        p = p[idx..-1] || '/'
+        p = '/' + p if p[0, 1] != '/' # ensure a leading slash on path
+        p
+      else
+        p
+      end
     end
 
     def form_hash
@@ -133,7 +143,7 @@ module Blix::Rest
     end
 
     def path_for(path)
-      File.join(RequestMapper.path_root, path)
+      File.join(RequestMapper.path_root, path || '')
     end
 
     def url_for(path)
@@ -179,7 +189,7 @@ module Blix::Rest
     end
 
     def redirect(path, status = 302)
-      raise ServiceError.new(nil, status, 'Location' => RequestMapper.ensure_full_path(path))
+      raise ServiceError.new(nil, status, 'location' => RequestMapper.ensure_full_path(path))
     end
 
     alias redirect_to redirect
@@ -223,11 +233,11 @@ module Blix::Rest
     end
 
     def set_status(value)
-      @_response.status = value
+      @_response.status = value.to_i
     end
 
     def add_headers(headers)
-      @_response.headers.merge!(headers)
+      @_response.headers.merge!(headers.map{|k,v| [k.to_s.downcase,v]}.to_h)
     end
 
     # the following is copied from Rack::Utils
@@ -265,13 +275,13 @@ module Blix::Rest
 
     # send data to browser as attachment
     def send_data(data, opts = {})
-      add_headers 'Content-Type'=> opts[:type] || 'application/octet-stream'
+      add_headers 'content-type'=> opts[:type] || 'application/octet-stream'
       if opts[:filename]
-        add_headers 'Content-Disposition'=>'attachment;filename='+ opts[:filename]
+        add_headers 'content-disposition'=>'attachment;filename='+ opts[:filename]
       elsif opts[:disposition] == 'attachment'
-        add_headers 'Content-Disposition'=>'attachment'
+        add_headers 'content-disposition'=>'attachment'
       elsif opts[:disposition] == 'inline'
-        add_headers 'Content-Disposition'=>'inline'
+        add_headers 'content-disposition'=>'inline'
       end
       raise RawResponse.new(data, opts[:status] || 200)
     end
@@ -324,7 +334,7 @@ module Blix::Rest
       # else
       #   cookie_header = cookie_text
       # end
-      @_response.headers['Set-Cookie'] = @_cookies.values.join("\n")
+      @_response.headers['set-cookie'] = @_cookies.values.join("\n")
       value
     end
 
@@ -384,7 +394,7 @@ module Blix::Rest
 
     #----------------------------------------------------------------------------------------------------------
 
-    def initialize(context, _verb, _path, _parameters)
+    def _setup(context, _verb, _path, _parameters)
       @_context        = context
       @_req            = context.req
       @_env            = req.env
@@ -443,9 +453,9 @@ module Blix::Rest
         path        = opts[:path] || __erb_path || Controller.erb_root
 
         layout = layout_name && if no_template_cache
-                                  ERB.new(File.read(File.join(path, layout_name + '.html.erb')),nil,'-')
+                                  ERB.new(File.read(File.join(path, layout_name + '.html.erb')),:trim_mode=>'-')
                                 else
-                                  erb_templates[layout_name] ||= ERB.new(File.read(File.join(path, layout_name + '.html.erb')),nil,'-')
+                                  erb_templates[layout_name] ||= ERB.new(File.read(File.join(path, layout_name + '.html.erb')),:trim_mode=>'-')
         end
 
         begin
@@ -468,15 +478,15 @@ module Blix::Rest
         path        = opts[:erb_dir] || __erb_path || Controller.erb_root
 
         layout = layout_name && if no_template_cache
-                                  ERB.new(File.read(File.join(path, layout_name + '.html.erb')),nil,'-')
+                                  ERB.new(File.read(File.join(path, layout_name + '.html.erb')),:trim_mode=>'-')
                                 else
-                                  erb_templates[layout_name] ||= ERB.new(File.read(File.join(path, layout_name + '.html.erb')),nil,'-')
+                                  erb_templates[layout_name] ||= ERB.new(File.read(File.join(path, layout_name + '.html.erb')),:trim_mode=>'-')
         end
 
         erb = if no_template_cache
-                ERB.new(File.read(File.join(path, name + '.html.erb')),nil,'-')
+                ERB.new(File.read(File.join(path, name + '.html.erb')),:trim_mode=>'-')
               else
-                erb_templates[name] ||= ERB.new(File.read(File.join(path, name + '.html.erb')),nil,'-')
+                erb_templates[name] ||= ERB.new(File.read(File.join(path, name + '.html.erb')),:trim_mode=>'-')
         end
 
         begin
@@ -528,7 +538,8 @@ module Blix::Rest
           unless opts[:force] && (opts[:accept] == :*)
             check_format(opts[:accept], context.format)
           end
-          app = new(context, verb, path, opts)
+          app = new
+          app._setup(context, verb, path, opts)
           begin
             app.before(opts)
             app.__before

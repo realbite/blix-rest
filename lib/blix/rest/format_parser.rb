@@ -107,7 +107,7 @@ module Blix::Rest
     end
 
     def format_response(value, response)
-      value = [value.to_s] unless value.respond_to?(:each)
+      value = [value.to_s] unless value.respond_to?(:each) ||  value.respond_to?(:call)
       response.content = value
     end
 

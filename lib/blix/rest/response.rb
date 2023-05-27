@@ -12,7 +12,7 @@ module Blix::Rest
 
     def initialize
       @status  = 200
-      @headers  = {}
+      @headers  = Rack::Headers.new
       @content = nil
     end
 

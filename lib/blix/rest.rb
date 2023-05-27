@@ -2,6 +2,7 @@ require 'base64'
 require 'logger'
 require 'time'
 require 'cgi'
+require 'rack'
 
 module Blix
   module Rest
@@ -9,14 +10,14 @@ module Blix
     # EXPIRED_TOKEN_MESSAGE = 'token expired'
     # INVALID_TOKEN_MESSAGE = 'invalid token'
 
-    CONTENT_TYPE      = 'Content-Type'.freeze
+    CONTENT_TYPE      = 'content-type'.freeze
     CONTENT_TYPE_JSON = 'application/json'.freeze
     CONTENT_TYPE_HTML = 'text/html; charset=utf-8'.freeze
     CONTENT_TYPE_XML  = 'application/xml'.freeze
-    AUTH_HEADER       = 'WWW-Authenticate'.freeze
-    CACHE_CONTROL     = 'Cache-Control'.freeze
+    AUTH_HEADER       = 'www-authenticate'.freeze
+    CACHE_CONTROL     = 'cache-control'.freeze
     CACHE_NO_STORE    = 'no-store'.freeze
-    PRAGMA            = 'Pragma'.freeze
+    PRAGMA            = 'pragma'.freeze
     NO_CACHE          = 'no-cache'.freeze
     URL_ENCODED       = %r{^application/x-www-form-urlencoded}.freeze
     JSON_ENCODED      = %r{^application/json}.freeze # NOTE: "text/json" and "text/javascript" are deprecated forms
@@ -103,11 +104,13 @@ module Blix
     class RawResponse < StandardError
       attr_reader :status
       attr_reader :headers
+      attr_reader :content
 
       def initialize(message, status = nil, headers = nil)
         super(message || "")
-        @status = status
+        @status  = status
         @headers = headers
+        @content = message
       end
     end
 

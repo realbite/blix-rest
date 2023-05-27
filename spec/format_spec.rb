@@ -5,7 +5,7 @@ module Blix::Rest
   describe ServiceError do
 
     it "should return message as string" do
-      e = ServiceError.new("foo",123,"Location"=>"/newpath")
+      e = ServiceError.new("foo",123,"location"=>"/newpath")
       e.to_s.should == "foo"
       "#{e}".should == "foo"
       e.message.should == "foo"
@@ -41,7 +41,7 @@ module Blix::Rest
   describe HtmlFormatParser do
 
     it "should parse a redirect message" do
-      e = ServiceError.new(nil,302,"Location"=>"/newpath")
+      e = ServiceError.new(nil,302,"location"=>"/newpath")
       message = HtmlFormatParser.new.format_error(e.message)
       message.should include("<p></p>")
     end

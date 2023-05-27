@@ -17,7 +17,7 @@ Fully extensible through RACK middleware and your own code]
 
   s.add_dependency('httpclient')
   s.add_dependency('multi_json')
-  s.add_dependency('rack')
+  s.add_dependency('rack', ">=3.0.0")
 
   s.add_development_dependency('rspec')
   s.add_development_dependency('pry')

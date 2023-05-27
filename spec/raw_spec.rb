@@ -36,28 +36,28 @@ module Blix::Rest
     it "should send basic data" do
       resp = @srv.get('/myrawdata')
       puts resp.inspect
-      expect(resp.header["Content-Type"]).to eq "application/xyz"
+      expect(resp.headers["Content-Type"]).to eq "application/xyz"
       expect(resp.status).to eq 204
     end
 
     it "should raise raw response" do
       resp = @srv.get('/rawtext')
       puts resp.inspect
-      expect(resp.header["Content-Type"]).to eq "text/xyz"
+      expect(resp.headers["Content-Type"]).to eq "text/xyz"
       expect(resp.status).to eq 123
     end
 
     it "should raise raw response with status" do
       resp = @srv.get('/rawtext2')
       puts resp.inspect
-      expect(resp.header["Content-Type"]).to eq "text/xyz"
+      expect(resp.headers["Content-Type"]).to eq "text/xyz"
       expect(resp.status).to eq 123
     end
 
     it "should raise raw response using send_data" do
       resp = @srv.get('/rawtext2')
       puts resp.inspect
-      expect(resp.header["Content-Type"]).to eq "text/xyz"
+      expect(resp.headers["Content-Type"]).to eq "text/xyz"
       expect(resp.status).to eq 123
     end
 

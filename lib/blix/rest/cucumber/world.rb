@@ -4,7 +4,7 @@
 class RestWorld
   # the entry point to the rack application to be tested
   def self.app
-    @_app ||= Rack::Builder.parse_file('config.ru').first
+    @_app ||= Rack::Builder.parse_file('config.ru')
   end
 
   # a dummy request to sent to the server
@@ -16,15 +16,16 @@ class RestWorld
   class Response
     def initialize(resp)
       @resp = resp
-      if @resp.header['Content-Type'] == 'application/json'
+      content_type = @resp.headers['Content-Type'] || @resp.headers['content-type']
+      if content_type == 'application/json'
         begin
-          @h = MultiJson.load(@resp.body) || {}
+          @h = MultiJson.load(body) || {}
         rescue Exception => e
-          log 'INVALID RESPONSE BODY=>' + @resp.body
+          log 'INVALID RESPONSE BODY=>' + body
           raise
         end
       else
-        @h = { 'html' => @resp.body }
+        @h = { 'html' => body }
       end
 
       # get_ids_from_hash
@@ -35,7 +36,7 @@ class RestWorld
     end
 
     def body
-      @resp.body
+      [@resp.body].flatten.join('')
     end
 
     def data
@@ -51,7 +52,7 @@ class RestWorld
     end
 
     def header
-      @resp.header || {}
+      @resp.headers || {}
     end
 
     def content_type
@@ -217,7 +218,7 @@ class RestWorld
     @_response = Response.new(raw_response)
     # add cookies to the cookie jar.
     #unless @_current_user=="guest"
-    if cookie = @_response.header["Set-Cookie"]
+    if cookie = @_response.header["Set-Cookie"] || @_response.header["set-cookie"]
       parts = cookie.split(';')
       cookies << parts[0].strip
     end

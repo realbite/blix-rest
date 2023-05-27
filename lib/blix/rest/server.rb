@@ -158,8 +158,8 @@ module Blix::Rest
     def call(env)
       req = Rack::Request.new(env)
 
-      verb            = env['REQUEST_METHOD']
-      path            = req.path
+      verb  = env['REQUEST_METHOD']
+      path  = req.path
       path  = CGI.unescape(path).gsub('+',' ') unless _options[:unescape] == false
 
       blk, path_params, options, is_wild = RequestMapper.match(verb, path)
@@ -192,7 +192,7 @@ module Blix::Rest
       # check for cached response end return with cached response if found.
       #
       if do_cache && ( response = _cache["#{verb}|#{format}|#{path}"] )
-        return [response.status, response.headers.merge('X-Blix-Cache' => 'cached'), response.content]
+        return [response.status, response.headers.merge('x-blix-cache' => 'cached'), response.content]
       end
 
       response = Response.new
@@ -207,7 +207,11 @@ module Blix::Rest
           set_default_headers(parser,response)
           response.set(e.status, parser.format_error(e.message), e.headers)
         rescue RawResponse => e
-          response.set(e.status, e.message, e.headers)
+          value = e.content
+          value = [value.to_s] unless value.respond_to?(:each) ||  value.respond_to?(:call)
+          response.status  = e.status if e.status
+          response.content = value
+          response.headers.merge!(e.headers) if e.headers
         rescue AuthorizationError => e
           set_default_headers(parser,response)
           response.set(401, parser.format_error(e.message), AUTH_HEADER => "#{e.type} realm=\"#{e.realm}\", charset=\"UTF-8\"")
@@ -225,10 +229,11 @@ module Blix::Rest
         end
 
       else
+        set_default_headers(parser,response)
         response.set(404, parser.format_error('Invalid Url'))
       end
 
-      [response.status, response.headers, response.content]
+      [response.status.to_i, response.headers, response.content]
     end
 
     def set_default_headers(parser,response)
