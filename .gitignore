@@ -8,6 +8,9 @@ db/cstore/
 *.vpp~*
 *~
 Gemfile.lock
+*.old
+*.1
+*.2
 backup/
 .project
 .loadfile
