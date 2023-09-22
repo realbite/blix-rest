@@ -231,6 +231,7 @@ have access to a number of methods
     method             : the request method lowercase( 'get'/'post' ..)
     req                : the rack request
     body               : the request body as a string
+    path               : the request path
     query_params       : a hash of parameters as passed in the url as parameters
     path_params        : a hash of parameters constructed from variable parts of the path
     post_params        : a hash of parameters passed in the body of the request
@@ -246,7 +247,7 @@ have access to a number of methods
     render_erb         : (template_name [,:layout=>name])
     server_cache       : get the server cache object
     server_cache_get   : retrieve/store value in cache
-    path_for           : (path) give the correct path for an internal path
+    path_for           : (path) give the external path for an internal path
     url_for            : (path) give the full url for an internal path
     h                  : escape html string to avoid XSS
     escape_javascript  : escape  a javascript string
@@ -321,11 +322,53 @@ this will generate a new session_id and setup the relevant headers
 
 options can include:
 
-    :secure => true    # secure cookies only
-    :http = >true      # cookies for http only not javascript requests
+    :secure => true      # secure cookies only
+    :http = >true        # cookies for http only not javascript requests
     :samesite =>:strict  # use strict x-site policy
     :samesite =>:lax     # use lax x-site policy
 
+For more complete session management:
+
+    class MyController < Blix::Rest::Controller
+      include Blix::Rest::Session
+
+      session_name :xxx               # optional default'blix'
+      session_opts :http=>true        # optional
+      session_manager: MyManager.new  # optional , default Blix::Redis::Store
+
+
+      def myroutine
+        @xxx = session['xxx']
+
+        session['yyy'] = true
+      end
+
+    end
+
+options can include:
+
+    :secure                 # false
+    :http                   # false
+    :samesite               # lax
+    :path                   # '/'
+    :expire_secs            # 30 mins
+    :cleanup_every_secs     # 5 minutes
+    :max_age                # nil
+
+the following methods are available:
+
+    reset_session           # gen new session id
+    session                 # session hash
+    csrf_token              # the session csrf token
+
+route options that affect sessions:
+
+    :nosession=>true        # no session will be set/retrieved
+    :cache=>true            # no session will be set/retrieved
+    :csrf=>true             # request will be validated for calid csrf token.
+                            # token must be in header X_CSRF_TOKEN field
+
+session configuration is inherited from superclass controllers unless overridden.
 
 ## Cache
 
@@ -399,6 +442,31 @@ the cache is not used in development/testmode , only in production mode.
 ### IMPORTANT - DO NOT CACHE SESSION KEYS AND OTHER SPECIFIC DATA IN CACHE
 
 only cache pages with **HEADERS** and **CONTENT** that is not user specific.
+
+## CORS
+
+cross origin site requests
+
+    MyController < Blix::Rest::Controller
+
+      get '/info/crosssite' do
+        set_accept_cors
+        {:data=>'foo'}
+      end
+
+      options '/info/' crosssite' do
+        set_accept_cors, :headers=>'Content-Type',
+      end
+
+    end
+
+within an `options` response the following parameters can be passes.
+
+    :origin=>'www.othersite.com'            # specify specific allowed origin.
+    :methods => [:get]                      # allowed methods
+    :max_age => 86400                       # maximum age this auth is valid
+    :headers => ['Content-Type','X-OTHER']  # allow additional headers
+    :credentials => true                    # allow requests with credentials
 
 ## Views
 
@@ -487,6 +555,9 @@ now you can use the following in scenarios ........
 NOTE : if you need to set up your database with users then you can use the following hook ..
 
 in features/support/world.rb .........
+
+
+    require 'blix/rest/cucumber'
 
     class RestWorld
 

@@ -94,6 +94,7 @@ module Blix::Rest
       end
     end
 
+
     def form_hash
       StringHash.new(req.POST)
     end
@@ -230,6 +231,30 @@ module Blix::Rest
       login = auth_parts[0]
       password = auth_parts[1]
       [login, password]
+    end
+
+    # set the cors headers
+    def set_accept_cors(opts={})
+      origin  = opts[:origin] || env['HTTP_ORIGIN'] || '*'
+      origin  = origin.to_s
+      if method=='options'
+        methods = [opts[:methods] || []].to_a.flatten
+        max_age = opts[:max_age] || 86400
+        headers = [opts[:headers] || []].to_a.flatten
+        credentials = opts.key?(:credentials) ? !!opts[:credentials] : true
+        methods = [:get] if methods.empty?
+        methods = methods.map{|m| m.to_s.upcase}
+        headers = ['Content-Type'] if headers.empty?
+        max_age = max_age.to_i
+
+        add_headers 'Access-Control-Allow-Origin' => origin,
+           'Access-Control-Allow-Methods'=>methods.join(', '),
+           'Access-Control-Allow-Headers'=>headers,
+           'Access-Control-Max-Age'=>max_age, #86400,
+           'Access-Control-Allow-Credentials'=>'true'
+      else
+        add_headers 'Access-Control-Allow-Origin' => origin
+      end
     end
 
     def set_status(value)
@@ -392,6 +417,9 @@ module Blix::Rest
       response
     end
 
+    def session_before(opts); end  # empty session before  hooh
+    def session_after; end  # empty session after hook
+
     #----------------------------------------------------------------------------------------------------------
 
     def _setup(context, _verb, _path, _parameters)
@@ -541,6 +569,7 @@ module Blix::Rest
           app = new
           app._setup(context, verb, path, opts)
           begin
+            app.session_before(opts)
             app.before(opts)
             app.__before
             context.response = app.instance_eval( &blk )
@@ -549,6 +578,7 @@ module Blix::Rest
           ensure
             app.__after
             app.after(opts, context.response)
+            app.session_after
             context.response
           end
         end
