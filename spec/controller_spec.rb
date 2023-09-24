@@ -168,19 +168,28 @@ module Blix::Rest
 
     it "should modify path/options in route hook" do
       #RequestMapper.reset
-      BaseController.before_route{|verb,path, options| path.prepend("/foo"); options[:foo]='bar'; verb.replace('PUT') }
+      BaseController.before_route{|r| r.path.prepend("/foo"); r.options[:foo]='bar'; r.verb.replace('PUT') }
       BaseController.route('GET','/admin',{:accept=>:html}){}
       l = RequestMapper.locations["GET"][-1]
       expect(l[0]).to eq 'GET'
       expect(l[1]).to eq 'foo/admin'
       expect(l[2]).to eq( {:accept=>:html, :foo=>'bar'})
 
-      NewController.before_route{|verb,path, options| path.prepend("/new"); options[:xxx]='yyy' }
+      NewController.before_route{|r| r.path.prepend("/new"); r.options[:xxx]='yyy' }
       NewController.route('GET','/orders',{:accept=>:json}){}
       l = RequestMapper.locations["GET"][-1]
       expect(l[0]).to eq 'GET'
       expect(l[1]).to eq 'new/foo/orders'
       expect(l[2]).to eq( {:accept=>:json, :foo=>'bar', :xxx=>'yyy'})
+
+
+      NewController.before_route{|r| r.path_prefix("/other"); r.default_option(:yyy,'zzz') }
+      NewController.route('GET','/orders',{:accept=>:json}){}
+      l = RequestMapper.locations["GET"][-1]
+      expect(l[0]).to eq 'GET'
+      expect(l[1]).to eq 'other/foo/orders'
+      expect(l[2]).to eq( {:accept=>:json, :foo=>'bar', :yyy=>'zzz'})
+
       BaseController.before_route(){1}
       NewController.before_route(){1}
     end

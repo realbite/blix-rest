@@ -150,7 +150,7 @@ require 'blix/rest/format_parser'
 require 'blix/rest/request_mapper'
 require 'blix/rest/cache'
 require 'blix/rest/server'
-# require 'blix/rest/provider'
+require 'blix/rest/route'
 require 'blix/rest/controller'
 # require 'blix/rest/provider_controller'
 

@@ -292,21 +292,26 @@ is ok though.
 
 the `before_route` hook can be used to modify the path or options of a route.
 
-*NOTE* ! when manipulating the path you have to modify the string object in place.
-
 the verb can not be modified
 
 example:
 
     class MyController < Blix::Rest::Controller
 
-      before_route do |verb, path, opts|
-        opts[:level] = :visitor unless opts[:level]
-        path.prepend('/') unless path[0] == '/'
-        path.prepend('/app') unless path[0, 4] == '/app'
+      before_route do |route|
+        route.default_option(:level,:visitor)
+        route.prefix_path('/app')
       end
       ...
     end
+
+the following methods are available on the route:
+
+    verb                        # readonly, the 'GET','POST' etc verb of the route
+    path                        # the path of the route
+    options                     # the options associated with the route eg :accept
+    path_prefix('/xx')          # ensure the path has the given prefix
+    default_option(:xxx,'foo')  # ensure that option has the given default value
 
 ### Sessions
 

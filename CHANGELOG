@@ -1,3 +1,6 @@
+# 0.8.2   -  ensure route path starts with '/'  25/9/2023
+          -  redifine before_route method to use route class 25/9/2023
+
 # 0.8.1   -  add session module 21/9/2023
              add set_allow_cors method in controller 22/9/2023
 
