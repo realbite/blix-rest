@@ -160,7 +160,7 @@ module Blix::Rest
 
       verb  = env['REQUEST_METHOD']
       path  = req.path
-      path  = CGI.unescape(path).gsub('+',' ') unless _options[:unescape] == false
+      path  = CGI.unescape(path) unless _options[:unescape] == false
 
       blk, path_params, options, is_wild = RequestMapper.match(verb, path)
 

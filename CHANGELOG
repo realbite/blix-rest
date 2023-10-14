@@ -1,3 +1,7 @@
+# 0.9.2   -  stop replacing '+' with space in url  12/10/2023
+
+# 0.9.1   -  add allow_methods to controller  3/10/2023
+
 # 0.8.2   -  ensure route path starts with '/'  25/9/2023
           -  redifine before_route method to use route class 25/9/2023
 

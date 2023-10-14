@@ -82,7 +82,7 @@ module Blix::Rest
 
     # ovverride the path method to return the internal path.
     def path
-      p = req.path
+      p = CGI.unescape(req.path)
       p = '/' + p if p[0, 1] != '/' # ensure a leading slash on path
       idx = RequestMapper.path_root_length
       if idx > 0
@@ -669,6 +669,17 @@ module Blix::Rest
           warn("warning: after hook already defined in #{file}") if _after_hooks[file]
           _after_hooks[file] = block
         end
+      end
+
+      def allow_methods(*methods)
+        out = String.new
+        methods.each do |method|
+          method = method.to_s.upcase
+          next if (HTTP_VERBS + ['ALL']).include?(method)
+          out << "def #{method.downcase}(*a, &b);route '#{method}', *a, &b;end\n"
+        end
+        puts out if $DEBUG || $VERBOSE
+        eval out unless out.empty?
       end
 
     end

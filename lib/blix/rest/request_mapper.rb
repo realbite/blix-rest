@@ -317,11 +317,9 @@ module Blix::Rest
         list.sort! { |a, b| a[0] <=> b[0] }
         str = String.new
         list.each do |route|
-          #pairs = route[1]
-          (HTTP_VERBS + ['ALL']).each do |verb|
-            if route[1].key? verb
-              str << verb << "\t" << route[0] << route[1][verb] << "\n"
-            end
+          pairs = route[1].to_a.sort{|a,b| a[0]<=>b[0]}
+          pairs.each do |pair|
+            str << pair[0] << "\t" << route[0] << "\t" << pair[1] << "\n"
           end
           str << "\n"
         end

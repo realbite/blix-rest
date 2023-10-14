@@ -236,12 +236,14 @@ have access to a number of methods
     path_params        : a hash of parameters constructed from variable parts of the path
     post_params        : a hash of parameters passed in the body of the request
     params             : all the params combined
+    allow_methods      : allow the non standard http verbs in the controller. eg `:propfind `
     user               : the user making this request ( or nil if
     format             : the format the response should be in :json or :html
     before             : before hook ( opts ) - remember to add 'super' as first line !!!
     after              : after hook (opts,response)- remember to add 'super' as first line !!!
     proxy              : forward the call to another service (service,path, opts={}) , :include_query=>true/false
     session            : req.session
+    set_status         : set the http response status ( 200 )
     redirect           : (path, status=302) redirect to another url.
     request_ip         : the ip of the request
     render_erb         : (template_name [,:layout=>name])
@@ -300,7 +302,7 @@ example:
 
       before_route do |route|
         route.default_option(:level,:visitor)
-        route.prefix_path('/app')
+        route.path_prefix('/app')
       end
       ...
     end
@@ -333,6 +335,9 @@ options can include:
     :samesite =>:lax     # use lax x-site policy
 
 For more complete session management:
+
+    require 'blix/utils/redis_store'
+    require 'blix/rest/session'
 
     class MyController < Blix::Rest::Controller
       include Blix::Rest::Session

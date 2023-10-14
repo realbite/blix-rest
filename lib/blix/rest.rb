@@ -96,9 +96,14 @@ module Blix
 
       def initialize(message, status = nil, headers = nil)
         super(message || "")
-        @status = status || 406
+        @status = status.to_i || 406
         @headers = headers
       end
+
+      def to_i
+        @status
+      end
+
     end
 
     class RawResponse < StandardError
