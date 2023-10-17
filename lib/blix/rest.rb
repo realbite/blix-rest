@@ -96,7 +96,7 @@ module Blix
 
       def initialize(message, status = nil, headers = nil)
         super(message || "")
-        @status = status.to_i || 406
+        @status = (status || 406).to_i
         @headers = headers
       end
 
