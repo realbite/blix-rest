@@ -520,6 +520,8 @@ then within a controller render your view with.
 
 ## Testing a Service with cucumber
 
+install the `blix-rest-cucumber` gem
+
 
 in features/support/setup.rb
 
@@ -586,7 +588,7 @@ in features/support/world.rb .........
 
 now you can also use eg  `:myuser_foo_id` within a request path/json.
 
-
+*SEE MORE INFO IN BLIX-REST-CUCMBER GEM README*
 
 ## Manage Assets
 
