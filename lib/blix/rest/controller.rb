@@ -241,6 +241,35 @@ module Blix::Rest
       [login, password]
     end
 
+    def throttle_basic_auth(realm=nil, options={})
+      login, password = get_basic_auth(realm)
+      # check that the waiting time has expired
+      info       = self.class.basic_store.get_hash(login) || {}
+      fail_count = info['fail_count'].to_i
+      if fail_count > 3
+        now       = Time.now
+        fail_time = info['fail_time']
+        delta     = 60                             # one minute
+        delta     = 60*10      if fail_count > 10  # 10 minutes
+        delta     = 60*60*24   if fail_count > 100 # one day
+        if (fail_time + delta) > now
+          raise Blix::Rest::AuthorizationError.new("try again after #{(fail_time + delta)}", realm)
+        end
+      end
+      if yield(login,password)
+        # auth success - set error count to 0
+        info['fail_count'] = 0
+        self.class.basic_store.store_hash(login, info)
+        true
+      else
+        # auth failure - increment error count / set error time
+        info['fail_count'] = fail_count + 1
+        info['fail_time']  = Time.now
+        self.class.basic_store.store_hash(login, info)
+        raise Blix::Rest::AuthorizationError.new("invalid login or password", realm)
+      end
+    end
+
     # set the cors headers
     def set_accept_cors(opts={})
       origin  = opts[:origin] || env['HTTP_ORIGIN'] || '*'
@@ -369,6 +398,56 @@ module Blix::Rest
       # end
       @_response.headers['set-cookie'] = @_cookies.values.join("\n")
       value
+    end
+
+    # only allow so many exceptions in a given time.
+    # the delay applies to
+    #   - 3x failure
+    #   - 10x failure
+    #   - 100x failure
+
+    # options:
+    #  :prefix    # the prefix to use in the cache
+    #  :cache     # a cache object  ( server_cache )
+    #  :times     # array of delays in seconds to apply default: [60, 600, 86400]
+    #
+    def rate_limit(name, options = {})
+      # check that the waiting time has expired
+      cache      = options[:cache]  || server_cache()
+      prefix     = options[:prefix] || 'rlimit'
+      key        = "#{prefix}|#{name}"
+      info       = cache.get(key) || {}
+      fail_count = info['fc'].to_i
+      times      = options[:times] || []
+      if fail_count > 2
+        now       = Time.now
+        fail_time = info['ft']
+        delta     = times[0] || 60                               # one minute
+        delta     = times[1] || 60 * 10      if fail_count > 10  # 10 minutes
+        delta     = times[2] || 60 * 60 * 24 if fail_count > 100 # one day
+        if (fail_time + delta) > now
+          raise RateError, "#{(fail_time + delta)}"
+        end
+      end
+      exception = nil
+      result = begin
+                yield(key)
+               rescue Exception => e
+                 exception = e
+                 nil
+              end
+      if exception
+        # auth failure - increment error count / set error time
+        info['fc'] = fail_count + 1
+        info['ft']  = Time.now
+        cache.set(key, info)
+        raise exception
+      else
+        # auth success - set error count to 0
+        info['fc'] = 0
+        cache.set(key, info)
+        result
+      end
     end
 
     # manage session handling --------------------------------------------------

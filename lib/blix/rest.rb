@@ -127,6 +127,8 @@ module Blix
         @type = type || 'Basic'
       end
     end
+
+    class RateError < StandardError; end
   end
 end
 

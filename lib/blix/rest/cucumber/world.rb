@@ -4,7 +4,9 @@
 class RestWorld
   # the entry point to the rack application to be tested
   def self.app
-    @_app ||= Rack::Builder.parse_file('config.ru')
+    @_app ||= begin
+      [Rack::Builder.parse_file('config.ru')].flatten.first
+    end
   end
 
   # a dummy request to sent to the server

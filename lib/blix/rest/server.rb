@@ -156,6 +156,7 @@ module Blix::Rest
 
     # the call function is the interface with the rack framework
     def call(env)
+      t1  = Time.now
       req = Rack::Request.new(env)
 
       verb  = env['REQUEST_METHOD']
@@ -232,7 +233,7 @@ module Blix::Rest
         set_default_headers(parser,response)
         response.set(404, parser.format_error('Invalid Url'))
       end
-
+      Blix::Rest.logger.info "#{verb} #{path} total time=#{((Time.now-t1)*1000).round(2)}ms" if $VERBOSE || $DEBUG
       [response.status.to_i, response.headers, response.content]
     end
 

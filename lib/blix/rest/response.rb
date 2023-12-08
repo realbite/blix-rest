@@ -1,6 +1,10 @@
 # pass a response object to the controller to set
 # header status and content.
 
+unless defined?(Rack::Headers)
+  class Rack::Headers < Hash; end
+end
+
 module Blix::Rest
 
 
