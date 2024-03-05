@@ -370,6 +370,7 @@ the following methods are available:
     reset_session           # gen new session id
     session                 # session hash
     csrf_token              # the session csrf token
+    session_skip_update     # do not update the session or session access times.
 
 route options that affect sessions:
 
@@ -477,6 +478,31 @@ within an `options` response the following parameters can be passes.
     :max_age => 86400                       # maximum age this auth is valid
     :headers => ['Content-Type','X-OTHER']  # allow additional headers
     :credentials => true                    # allow requests with credentials
+
+
+## Rate Limit
+
+    Limit how frequently a block can raise an exception for the passed `name` parameter.
+    Will raise a RateError with the access time if limiting is active, other wise the
+    exception or result from the block.
+
+    rate_limit(name, options ) do
+      .....
+    end
+
+
+    only allow so many exceptions in a given time.
+     the delay applies to
+       - 3x failure
+       - 10x failure
+       - 100x failure
+
+     options:
+      :prefix    # the prefix to use in the cache
+      :cache     # a cache object  ( server_cache )
+      :times     # array of delays in seconds to apply default: [60, 600, 86400]
+
+
 
 ## Views
 

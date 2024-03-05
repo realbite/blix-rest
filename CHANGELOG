@@ -1,3 +1,7 @@
+# 0.10.3   -  change RateError exception string to Time object  05/03/2024
+
+# 0.10.2   -  add the session_skip_update method  07/02/2024
+
 # 0.10.1   -  add the rate_limit method to controller  07/12/2023
 
 # 0.9.2   -  stop replacing '+' with space in url  12/10/2023

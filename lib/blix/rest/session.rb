@@ -26,6 +26,11 @@ module Blix::Rest
       self.class.get_session_manager
     end
 
+    def session_skip_update
+      @__session_id = nil
+    end
+
+
     def session_name
       self.class.get_session_name
     end
