@@ -91,7 +91,7 @@ module Blix::Rest
 
       def table
         # compile the table in one thread only.
-        @table ||= @@mutex.synchronize{@table ||= compile}
+        @table || @@mutex.synchronize{@table ||= compile}
       end
 
       def dump

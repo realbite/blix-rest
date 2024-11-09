@@ -207,6 +207,7 @@ module Blix::Rest
         rescue ServiceError => e
           set_default_headers(parser,response)
           response.set(e.status, parser.format_error(e.message), e.headers)
+          ::Blix::Rest.logger <<  e.message if $VERBOSE
         rescue RawResponse => e
           value = e.content
           value = [value.to_s] unless value.respond_to?(:each) ||  value.respond_to?(:call)

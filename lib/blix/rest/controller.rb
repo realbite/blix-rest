@@ -427,7 +427,7 @@ module Blix::Rest
         delta     = times[2] || 60 * 60 * 24 if fail_count > 100 # one day
         ltime     = fail_time + delta
         if ltime > now
-          raise RateError, ltime
+          raise RateError, ltime.to_s
         end
       end
       exception = nil

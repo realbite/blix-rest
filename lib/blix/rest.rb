@@ -33,6 +33,10 @@ module Blix
       @_environment ||= ENV['RACK_ENV'] || 'development'
     end
 
+    def self.init
+      RequestMapper.table  # compile the table
+    end
+
     def self.environment?(val)
       environment == val.to_s
     end

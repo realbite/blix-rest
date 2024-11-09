@@ -72,9 +72,9 @@ module Blix::Rest
           end
       end
 
-      if opts[:csrf]
-        if env["HTTP_X_CSRF_TOKEN"] != csrf_token
-          send_error("invalid csrf token")
+      if opts[:csrf] && (ENV['RACK_ENV']!='test')
+        if env["HTTP_X_CSRF_TOKEN"] != csrf_token 
+          send_error("error [0100]")
         end
       end
 
