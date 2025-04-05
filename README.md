@@ -1,530 +1,521 @@
-## INSTALLATION
+Blix::Rest User Guide
+=====================
 
+Table of Contents
+-----------------
+
+- [Blix::Rest User Guide](#blixrest-user-guide)
+  - [Table of Contents](#table-of-contents)
+  - [Introduction](#introduction)
+  - [Installation](#installation)
+  - [Creating a Simple Web Service](#creating-a-simple-web-service)
+  - [Controllers](#controllers)
+    - [Hooks](#hooks)
+    - [Routing](#routing)
+    - [Path Parameters](#path-parameters)
+    - [Query Parameters](#query-parameters)
+    - [Body Values](#body-values)
+    - [Wildcard Paths](#wildcard-paths)
+    - [Path Options](#path-options)
+  - [Request Handling](#request-handling)
+    - [Request Format](#request-format)
+  - [Response Handling](#response-handling)
+    - [Setting Headers and Status](#setting-headers-and-status)
+    - [Generating Error Responses](#generating-error-responses)
+    - [Predefined and Custom Formats](#predefined-and-custom-formats)
+    - [Custom Responses](#custom-responses)
+    - [Handling All Paths and Preserving File Extensions](#handling-all-paths-and-preserving-file-extensions)
+  - [Authentication](#authentication)
+  - [Sessions](#sessions)
+  - [Caching](#caching)
+  - [CORS (Cross-Origin Resource Sharing)](#cors-cross-origin-resource-sharing)
+  - [Rate Limiting](#rate-limiting)
+  - [Views](#views)
+      - [directory structure](#directory-structure)
+  - [Logging](#logging)
+  - [Testing with Cucumber](#testing-with-cucumber)
+  - [Asset Management](#asset-management)
+  - [Controller Helper Methods](#controller-helper-methods)
+
+<div style="page-break-after: always;"></div>
+
+Introduction
+------------
+
+Blix::Rest is a web application framework for Ruby that provides a
+simple and flexible way to build web services, APIs, and web
+applications. It supports RESTful routing, customizable controllers, and
+various formats for responses.
+
+Installation
+------------
+
+To install Blix::Rest, use the following command:
+
+```bash
     gem install blix-rest
+```
 
+Creating a Simple Web Service
+-----------------------------
 
-## CREATE A SIMPLE WEBSERVICE
+To create a simple web service, follow these steps:
 
-#### put the following in config.ru
+1\. Create a new file named `config.ru` with the following content:
 
-
+```ruby
     require 'blix/rest'
 
     class HomeController < Blix::Rest::Controller
-
-         get '/hello', :accept=>[:html,:json], :default=>:html do
-            if format == :json
-              {"message"=>"hello world"}
-            else
-             "<h1>hello world</h1>"
-            end
-         end
+      get '/hello', :accept => [:html, :json], :default => :html do
+        if format == :json
+          {"message" => "hello world"}
+        else
+          "<h1>hello world</h1>"
+        end
+      end
     end
 
     run Blix::Rest::Server.new
+```
 
+or at its simplest, only accepting the default `:json` format:
 
+```ruby
+    require 'blix/rest'
 
-
-#### at the command line ..
-
-`ruby -S rackup -p3000`
-
-
-#### now go to your browser and enter ..
-
-`http://localhost:3000/hello`
-
-or
-
-`http://localhost:3000/hello.json`
-
-## Note on JSON
-
-the default json parser uses multi json. load the specific json library you need
-before loading `blix/rest`.
-
-when using oj then you may need to set some default options eg:
-
-  `MultiJson.default_options = {:mode=>:custom, :use_as_json=>true}`
-
-## NOTE ON PATHS
-
-`get '/user/:user_id/list`
-
-`path_params[:user_id]` contains the content of the path at location :user_id
-
-`get '/resource/*wildpath'`
-
-`path_params[:wildpath]` contains the remainder of the path where the * is.
-
-if there is a more specific path then it will be used first :
-
-`get '/resource/aaa'` will be used before `get '/resource/*'`
-
-`get '/*'` will be used as a default path if no other paths match.
-
-`all '/mypath'` will accept all http_methods but if a more specific handler
-   is specified then it will be used first.
-
-
-### Path options
-
-    :accept     : the format or formats to accept eg: :html or [:png, :jpeg]
-    :default    : default format if not derived through other means.
-    :force      : force response into the given format
-    :query      : derive format from request query (default: false)
-    :extension  : derive format from path extension  (default: true)
-
-
-use `:accept=>:*` in combination with `:force` to accept all request formats.
-
-## APPLICATION MOUNT POINT
-
-this is the path of the mount path of the application
-
-this will be set to the environment variable `BLIX_REST_ROOT` if present
-
-otherwise set it manually with:
-
-`Blix::Rest.set_path_root( "/myapplication")`
-
-
-
-
-## GENERATE AN ERROR RESPONSE
-
-`send_error(message,status,headers)`
-
-or for standard headers and status 406 just ..
-
-`send_error "my error message`
-
-
-
-## HEADERS && STATUS
-
-add special headers to your response with eg:
-
-`add_headers( "AAA"=>"xxx","BBB"=>"yyyy")`
-
-change the status of a success response with eg:
-
-`set_status(401)`
-
-
-to specify __ALL__ the headers for a given format of response use eg:
-
-    srv = Blix::Rest::Server.new
-    srv.set_custom_headers(:html, 'Content-Type'=>'text/html; charset=utf-8', 'X-OTHER'=>'')
-
-    ...
-    srv.run
-
-remember to always set at least the content type!
-
-## BASIC AUTH
-
-in controller..
-
-    login,password = get_basic_auth
-    auth_error( "invalid login or password" ) unless .... # validate login and password
-
-
-
-
-## REQUEST FORMAT
-
-you can provide custom responses to a request format by registering a format parser
-for that format. you can also override the standard html,json or xml behavior.
-
-Note that the format for a non standard (html/json/xml) request is only taken from
-the extension part ( after the .) of the url ... eg
-
-`http://mydomain.com/mypage.jsonp` will give a format of jsonp
-
-you can specify the :default option in your route for a fallback format other than :json
-eg `:default=>:html`
-
-
-    class MyParser < FormatParser
-
-        def set_default_headers(headers)
-          headers[CACHE_CONTROL]= CACHE_NO_STORE
-          headers[PRAGMA]       = NO_CACHE
-          headers[CONTENT_TYPE] = CONTENT_TYPE_JSONP
-        end
-
-        def format_error(message)
-          message.to_s
-        end
-
-        def format_response(value,response)
-          response.content = "<script>load(" +
-            MultiJson.dump( value) +
-            ")</script>"
-        end
+    class HomeController < Blix::Rest::Controller
+      get '/hello', do
+        {"message" => "hello world"}
+      end
     end
 
-
-    s = Blix::Rest::Server.new
-    s.register_parser(:jsonp,MyParser.new)
-
-
-Then in your controller accept that format..
+    run Blix::Rest::Server.new
+```
 
 
-    get "/details" :accept=>[:jsonp] do
-        {"id"=>12}
-    end
 
-## CUSTOM RESPONSE WITHOUT CUSTOM PARSER
+2\. Start the server:
 
-to force a response in a certain format use the :force option in your route.
+```
+    ruby -S rackup -p3000
+```
 
-to return a custom response use `:force=>:raw` . You will have to specify all the
-headers and the body is returned as it is.
+3\. Access the service:
+* For HTML: `http://localhost:3000/hello`
+* For JSON: `http://localhost:3000/hello.json`
 
-use the following to accept requests in a special format ..
+Controllers
+-----------
 
-    get '/custom', :accept=>:xyz, :force=>:raw do
-       add_headers 'Content-Type'=>'text/xyz'
-       "xyz"
-    end
-
-
-Alternatively it is possible to raise a RawResponse:
-
-    add_headers 'Content-Type'=>'text/xyz'
-    raise RawResponse, 'xyz'
-
-or with status and headers:
-
-    raise RawResponse.new('xyz', 123, 'Content-Type'=>'text/xyz')
-
-## FORMATS
-
-the format of a request is derived from
-
-  1. the `:force` option value if present
-
-  2. the request query `format` parameter if the `:query` option is true
-
-  3. the url extension unless the `:extension` option is false.
-
-  4. the accept header format
-
-  5. the format specified in the `:default` option
-
-  6. `:json`
-
-
-## Controller
-
-    Blix::Rest::Controller
-
-base class for controllers. within your block handling a particular route you
-have access to a number of methods
-
-
-    env                : the request environment hash
-    method             : the request method lowercase( 'get'/'post' ..)
-    req                : the rack request
-    body               : the request body as a string
-    path               : the request path
-    query_params       : a hash of parameters as passed in the url as parameters
-    path_params        : a hash of parameters constructed from variable parts of the path
-    post_params        : a hash of parameters passed in the body of the request
-    params             : all the params combined
-    allow_methods      : allow the non standard http verbs in the controller. eg `:propfind `
-    user               : the user making this request ( or nil if
-    format             : the format the response should be in :json or :html
-    before             : before hook ( opts ) - remember to add 'super' as first line !!!
-    after              : after hook (opts,response)- remember to add 'super' as first line !!!
-    proxy              : forward the call to another service (service,path, opts={}) , :include_query=>true/false
-    session            : req.session
-    set_status         : set the http response status ( 200 )
-    redirect           : (path, status=302) redirect to another url.
-    request_ip         : the ip of the request
-    render_erb         : (template_name [,:layout=>name])
-    server_cache       : get the server cache object
-    server_cache_get   : retrieve/store value in cache
-    path_for           : (path) give the external path for an internal path
-    url_for            : (path) give the full url for an internal path
-    h                  : escape html string to avoid XSS
-    escape_javascript  : escape  a javascript string
-    server_options     : options as passed to server at create time
-    logger             : system logger
-    mode_test?         : test mode ?
-    mode_production?   : production mode ?
-    mode_development?  : development mode?
-    send_data          : send raw data (data, options )
-                            [:type=>mimetype]
-                            [:filename=>name]
-                            [:disposition=>inline|attachment]
-                            [:status=>234]
-
-    get_session_id(session_name, opts={}) :
-    refresh_session_id(session_name, opts={}) :
-
-to accept requests other than json then set `:accept=>[:json,:html]` as options        in the route
-
-eg  `post '/myform' :accept=>[:html]      # this will only accept html requests.`
+Controllers in Blix::Rest inherit from `Blix::Rest::Controller`. They
+provide various methods and hooks for handling requests and responses.
 
 ### Hooks
 
-a before or after hook can be defined on a controller. Only define the hook once
-for a given controller per source file. A hook included from another source file
-is ok though.
+Controllers support `before`, `before_route`, and `after` hooks:
 
+```ruby
     class MyController < Blix::Rest::Controller
 
       before do
-        ...
+        # Code to run before each request
+      end
+
+      before_route do
+        # Code to run after 'before' but before the route is executed
       end
 
       after do
-        ...
+        # Code to run after each request
       end
-
     end
+```
 
+-   `before`: Runs before any request processing begins. Use this for
+    setup operations that should occur for all routes in the controller.
+-   `before_route`: Runs after `before` but before the specific route
+    action is executed. This is useful for operations that should occur
+    for all routes but may depend on request-specific information.
+-   `after`: Runs after the request has been processed. Use this for
+    cleanup operations or final modifications to the response.
 
-#### manipulate the route path or options
+These hooks allow you to execute code at different stages of the request
+lifecycle, providing flexibility in how you handle requests and
+responses.
 
-the `before_route` hook can be used to modify the path or options of a route.
+### Routing
 
-the verb can not be modified
+Blix::Rest supports various HTTP methods for routing:
 
-example:
-
+```ruby
     class MyController < Blix::Rest::Controller
 
-      before_route do |route|
-        route.default_option(:level,:visitor)
-        route.path_prefix('/app')
+      get '/users' do
+        # Handle GET request
       end
-      ...
+
+      post '/users' do
+        # Handle POST request
+      end
+
+      put '/users/:id' do
+        # Handle PUT request
+      end
+
+      delete '/users/:id' do
+        # Handle DELETE request
+      end
+
+    end
+```
+
+### Path Parameters
+
+You can use path parameters in your routes:
+
+```ruby
+    get '/user/:user_id/list' do
+      user_id = path_params[:user_id]
+      # Use user_id
+    end
+```
+
+### Query Parameters
+
+Query parameters are key-value pairs that appear after the question mark (?) in a URL. 
+You can access query parameters in your routes like this:
+
+```ruby
+get '/search' do
+  query = query_params[:q]
+  limit = query_params[:limit]&.to_i || 10
+  # Use query and limit in your search logic
+  { results: perform_search(query, limit) }
+end
+```
+
+### Body Values
+
+There are several methods to access data from the request body, particularly useful for POST, PUT, and PATCH requests. Here are the main ways to access body values:
+
+1. `body_hash`: This method parses the request body and returns it as a hash. It's particularly useful for JSON payloads.
+
+```ruby
+post '/users' do
+  user_data = body_hash
+  new_user = User.create(user_data)
+  { id: new_user.id, message: "User created successfully" }
+end
+```
+
+2. `body`: This method returns the raw request body as a string. It's useful when you need to process the raw data yourself.
+
+```ruby
+post '/raw-data' do
+  raw_data = body
+  # Process the raw data
+  { received_bytes: raw_data.bytesize }
+end
+```
+
+3. `form_hash`: This method returns a hash of form data from POST requests. It's particularly useful for handling form submissions.
+
+```ruby
+post '/submit-form' do
+  form_data = form_hash
+  # Process the form data
+  { message: "Form received", name: form_data['name'] }
+end
+```
+
+4. `get_data(field)`: This method allows you to get a specific field from the request body's data hash.
+
+```ruby
+put '/users/:id' do
+  user_id = path_params[:id]
+  new_name = get_data('name')
+  # Update user name
+  { message: "User #{user_id} updated with name #{new_name}" }
+end
+```
+
+When working with body values, keep these points in mind:
+
+- The appropriate method to use depends on the `Content-Type` of the request.
+- For JSON payloads, `body_hash` automatically parses the JSON into a Ruby hash.
+- For form submissions, `form_hash` is the most convenient method.
+- Always validate and sanitize input data before using it in your application logic.
+- If the body cannot be parsed (e.g., invalid JSON), these methods may return nil or raise an error, so consider adding error handling.
+
+### Wildcard Paths
+
+You can use wildcard paths:
+
+```ruby
+    get '/resource/*wildpath' do
+      wildpath = path_params[:wildpath]
+      # Use wildpath
+    end
+```
+
+### Path Options
+
+You can specify various options for your routes:
+
+```ruby
+    get '/users', :accept => [:html, :json], :default => :html do
+      # Handle request
+    end
+```
+
+Available options:
+
+-   `:accept`: Formats to accept (e.g., `:html`, `[:png, :jpeg]`, `:*`)
+-   `:default`: Default format if not specified
+-   `:force`: Force response into a given format
+-   `:query`: Derive format from request query (default: false)
+-   `:extension`: Derive format from path extension (default: true)
+
+Request Handling
+----------------
+
+### Request Format
+
+The format of a request is derived in the following order:
+
+1.  The `:force` option value if present
+2.  The request query `format` parameter if the `:query` option is true
+3.  The URL extension unless the `:extension` option is false
+4.  The accept header format
+5.  The format specified in the `:default` option
+6.  `:json` (default)
+
+Response Handling
+-----------------
+
+### Setting Headers and Status
+
+```ruby
+    add_headers("X-Custom-Header" => "Value")
+    set_status(201)
+```
+
+### Generating Error Responses
+
+```ruby
+    send_error("Error message", 400)
+```
+
+### Predefined and Custom Formats
+
+Blix::Rest comes with predefined formats such as `:json`, `:html`,
+`:xml`, and others. However, you can also register custom formats to
+handle specific content types.
+
+To register a new format:
+
+```ruby
+    class MyCustomFormatParser < Blix::Rest::FormatParser
+      def initialize
+        super(:mycustom, 'application/x-mycustom')
+      end
+
+      def parse(text)
+        # Custom parsing logic here
+      end
+
+      def format(obj)
+        # Custom formatting logic here
+      end
     end
 
-the following methods are available on the route:
+    Blix::Rest::Server.register_parser(MyCustomFormatParser.new)
+```
 
-    verb                        # readonly, the 'GET','POST' etc verb of the route
-    path                        # the path of the route
-    options                     # the options associated with the route eg :accept
-    path_prefix('/xx')          # ensure the path has the given prefix
-    default_option(:xxx,'foo')  # ensure that option has the given default value
+After registering your custom format parser, you can use it in your
+routes:
 
-### Sessions
+```ruby
+    get '/custom', :accept => :mycustom do
+      # Your custom format will be used for the response
+      { data: 'Some data' }
+    end
+```
 
-the following methods are available in the controller for managing sessions.
 
-    get_session_id(session_name, opts={})
+### Custom Responses
 
-this will set up a session and setup the relevant cookie  headers forthe browser.
+To return a custom response without using a registered format parser,
+use the `:force => :raw` option:
 
-    refresh_session_id(session_name, opts={})
+```ruby
+    get '/custom', :accept => :xyz, :force => :raw do
+      add_headers 'Content-Type' => 'text/xyz'
+      "Custom response"
+    end
+```
 
-this will generate a new session_id and setup the relevant headers
+This approach allows you to have full control over the response format
+and headers.
 
-options can include:
+### Handling All Paths and Preserving File Extensions
 
-    :secure => true      # secure cookies only
-    :http = >true        # cookies for http only not javascript requests
-    :samesite =>:strict  # use strict x-site policy
-    :samesite =>:lax     # use lax x-site policy
+In some cases, you might want to respond to all paths and keep the file
+extension as part of the path, rather than using it to determine the
+response format. You can achieve this by using a combination of options:
 
-For more complete session management:
+```ruby
+    get '/*path', :accept => :*, :extension => false, :force => :raw do
+      file_path = path_params[:path]
+      # Handle the request based on the full path, including any file extension
+      content = read_file(file_path)
+      content_type = determine_content_type(file_path)
 
+      add_headers 'Content-Type' => content_type
+      content
+    end
+```
+
+In this example:
+
+-   `:accept => :*` allows the route to accept any content type.
+-   `:extension => false` prevents Blix::Rest from using the file
+    extension to determine the response format.
+-   `:force => :raw` gives you full control over the response, including
+    setting the appropriate Content-Type header.
+
+This configuration is particularly useful when you're serving static
+files or when you need to preserve the original path structure in your
+application logic.
+
+Authentication
+--------------
+
+Blix::Rest supports basic authentication:
+
+```ruby
+    login, password = get_basic_auth
+    auth_error("Invalid login or password") unless valid_credentials?(login, password)
+```
+
+Sessions
+--------
+
+Blix::Rest provides session management:
+
+```ruby
     require 'blix/utils/redis_store'
     require 'blix/rest/session'
 
     class MyController < Blix::Rest::Controller
       include Blix::Rest::Session
 
-      session_name :xxx               # optional default'blix'
-      session_opts :http=>true        # optional
-      session_manager: MyManager.new  # optional , default Blix::Redis::Store
+      session_name :my_session
+      session_opts :http => true
+      session_manager MySessionManager.new
 
-
-      def myroutine
-        @xxx = session['xxx']
-
-        session['yyy'] = true
+      def my_action
+        session['user_id'] = 123
+        @user_data = session['user_data']
       end
+    end
+```
 
+Caching
+-------
+
+Blix::Rest provides a caching mechanism:
+
+```ruby
+    value = server_cache_get('my_key') { expensive_operation() }
+```
+
+To cache responses automatically, add `:cache => true` to your route
+options.
+
+CORS (Cross-Origin Resource Sharing)
+------------------------------------
+
+To enable CORS for a route:
+
+```ruby
+    get '/api/data' do
+      set_accept_cors
+      { data: 'Some data' }
     end
 
-options can include:
-
-    :secure                 # false
-    :http                   # false
-    :samesite               # lax
-    :path                   # '/'
-    :expire_secs            # 30 mins
-    :cleanup_every_secs     # 5 minutes
-    :max_age                # nil
-
-the following methods are available:
-
-    reset_session           # gen new session id
-    session                 # session hash
-    csrf_token              # the session csrf token
-    session_skip_update     # do not update the session or session access times.
-
-route options that affect sessions:
-
-    :nosession=>true        # no session will be set/retrieved
-    :cache=>true            # no session will be set/retrieved
-    :csrf=>true             # request will be validated for calid csrf token.
-                            # token must be in header X_CSRF_TOKEN field
-
-session configuration is inherited from superclass controllers unless overridden.
-
-## Cache
-
-
-the server has a cache which can also be used for storing your own data.
-
-within a controller access the controller with `server_cache` which returns the
-cache object.
-
-cache object methods:
-
-    get(key)        # return value from the cache or nil
-    set(key,value)  # set a value in the cache
-    key?(key)       # is a key present in the cache
-    delete(key)     # delete a key from the cache
-    clear           # delete all keys from the cache.
-
-there is also a `server_cache_get` method.
-
-    server_cache_get(key){ action }
-
-get the value from the cache. If the key is missing in the cache then perform
-the action in the provided block and store the result in the cache.
-
-the default cache is just a ruby hash in memory. Pass a custom cache to
-when creating a server with the `:cache` parameter.
-
-    class MyCache < Blix::Rest::Cache
-       def get(key)
-          ..
-       end
-
-       def set(key,value)
-         ..
-       end
-
-       def key?(key)
-        ..
-       end
-
-       def delete(key)
-         ..
-       end
-
-       def clear
-         ..
-       end
-     end
-
-     cache = MyCache.new
-
-     app = Blix::Rest::Server.new(:cache=>cache)
-
-there is a redis cache already defined:
-
-    require 'blix/rest/redis_cache'
-
-    cache = Blix::Rest::RedisCache.new(:expire_secs=>60*60*24) # expire after 1 day
-    run Blix::Rest::Server.new(:cache=>cache)
-
-
-### automatically cache server responses
-
-add  `:cache=>true` to your route options in order to cache this route.
-
-add `:cache_reset=>true` to your route options if the cache should be cleared when
-calling this route.
-
-the cache is not used in development/testmode , only in production mode.
-
-### IMPORTANT - DO NOT CACHE SESSION KEYS AND OTHER SPECIFIC DATA IN CACHE
-
-only cache pages with **HEADERS** and **CONTENT** that is not user specific.
-
-## CORS
-
-cross origin site requests
-
-    MyController < Blix::Rest::Controller
-
-      get '/info/crosssite' do
-        set_accept_cors
-        {:data=>'foo'}
-      end
-
-      options '/info/' crosssite' do
-        set_accept_cors, :headers=>'Content-Type',
-      end
-
+    options '/api/data' do
+      set_accept_cors(
+        :origin => 'https://example.com',
+        :methods => [:get, :post],
+        :headers => ['Content-Type', 'Authorization']
+      )
     end
+```
 
-within an `options` response the following parameters can be passes.
+Rate Limiting
+-------------
 
-    :origin=>'www.othersite.com'            # specify specific allowed origin.
-    :methods => [:get]                      # allowed methods
-    :max_age => 86400                       # maximum age this auth is valid
-    :headers => ['Content-Type','X-OTHER']  # allow additional headers
-    :credentials => true                    # allow requests with credentials
+Blix::Rest provides a rate limiting mechanism, only allow so many exceptions in a given time:
 
+the delay times are applied to:
 
-## Rate Limit
+ * 3x failure
+ * 10x failure
+ * 100x failure
 
-    Limit how frequently a block can raise an exception for the passed `name` parameter.
-    Will raise a RateError with the access time if limiting is active, other wise the
-    exception or result from the block.
-
-    rate_limit(name, options ) do
-      .....
+```ruby
+    rate_limit('api_calls', times: [60, 600, 86400]) do
+      # Your rate-limited code here. If an exception ir raised
+      # then the failure count is incremented and an exception is raised 
+      # until the corresponding delay is expired. 
     end
+```
+
+the `api_calls` here is a key which is used to store the failure count against.
+If you were rate limiting a login then you might use the user name as part of this key.
+
+The `times:` array specifies the rate limiting intervals in seconds. The default values are the
+same as in this example:
+
+-   `60`: Limits requests per minute (60 seconds)
+-   `600`: Limits requests per 10 minutes (600 seconds, which is 10 minutes)
+-   `86400`: Limits requests per day (86400 seconds, which is 24 hours)
 
 
-    only allow so many exceptions in a given time.
-     the delay applies to
-       - 3x failure
-       - 10x failure
-       - 100x failure
 
-     options:
-      :prefix    # the prefix to use in the cache
-      :cache     # a cache object  ( server_cache )
-      :times     # array of delays in seconds to apply default: [60, 600, 86400]
+Views
+-----
 
+To render views, use the `render_erb` method:
 
-
-## Views
+```ruby
+    get '/users' do
+      @users = User.all
+      render_erb('users/index', layout: 'layouts/main')
+    end
+```
 
 the location of your views defaults to `app/views` otherwise set it manually with:
 
 globally eg:
-
+```ruby
     Blix::Rest.set_erb_root ::File.expand_path('../lib/myapp/views',  __FILE__)
-
+```
 or per controller eg:
-
+```ruby
     class MyController < Blix::Rest::Controller
 
        erb_dir  ::File.expand_path('../..',  __FILE__)
 
     end
-
+```
 then within a controller render your view with.
-
+```ruby
     render_erb( "users/index", :layout=>'layouts/main', :locals=>{:name=>"charles"})
-
-    ( locals work from ruby 2.1 )
+```
+( locals work from ruby 2.1 )
 
 
 #### directory structure
@@ -539,154 +530,116 @@ then within a controller render your view with.
                main.html.erb
 
 
-## Logging
+Logging
+-------
 
+Configure logging:
+
+```ruby
     Blix::Rest.logger = Logger.new('/var/log/myapp.log')
+```
 
+and log a message:
 
-## Testing a Service with cucumber
+```ruby
+    Blix::Rest.logger.info 'my message'
+```
 
-install the `blix-rest-cucumber` gem
+Testing with Cucumber
+---------------------
 
+For testing with Cucumber, install the `blix-rest-cucumber` gem and
+follow the setup instructions in the README.
 
-in features/support/setup.rb
+Asset Management
+----------------
 
-   require 'blix/rest/cucumber'
+For asset management capabilities, you can use the separate
+`blix-assets` gem. This gem provides tools for managing and
+serving assets such as JavaScript and CSS.
 
-   and setup your database connections etc
+To use asset management with your Blix::Rest application:
 
+1\. Install the `blix-assets` gem:
 
-in features/support/hooks.rb
+```
+    gem install blix-assets
+```
 
-   reset your database
+2\. Require the gem in your application:
 
-
-
-now you can use the following in scenarios ........
-
-        Given user guest gets "/info"
-
-        Given the following users exist:
-              | name  | level |
-              | anon  | guest |
-              | bob   | user  |
-              | mary  | provider  |
-              | paul  | user  |
-              | admin | admin |
-
-        Given user mary posts "/worlds" with {"name":"narnia"}    [..or gets/puts/deletes]
-        Then store the "id" as "world_id"
-
-        Given user bob posts "/worlds/:world_id" with  {"the_world_id"::world_id }
-
-        Then the status should be 200
-        Then the data type should be "r_type"
-        Then the data length should be 3
-        Then there should be an error
-        Then the error message should include "unique"
-        Then the data "name" should == "bob"
-        Then the data should include "name"
-
-        And explain
-
-
-NOTE : if you need to set up your database with users then you can use the following hook ..
-
-in features/support/world.rb .........
-
-
-    require 'blix/rest/cucumber'
-
-    class RestWorld
-
-      # add a hook to create the user in the  database -
-      #
-      def before_user_create(user,hash)
-        name = hash["name"]
-        u = MyUser.new
-        u.set(:user_wid, name)
-        u.set(:name,name)
-        u.set(:is_super,true) if hash["level"] == "super"
-        u.save
-        store["myuser_#{name}_id"] = u.id.to_s
-      end
-    end
-
-now you can also use eg  `:myuser_foo_id` within a request path/json.
-
-*SEE MORE INFO IN BLIX-REST-CUCMBER GEM README*
-
-## Manage Assets
-
-
+```ruby
     require 'blix/assets'
+```
+
+3\. Configure the asset manager:
+
+```ruby
+    Blix::AssetManager.config_dir = "config/assets"
+```
+
+4\. Use the asset manager in your controllers:
+
+```ruby
+    asset_path('assets/main.js')
+```
+
+5\. For detailed information on how to use `blix-assets`, please refer to
+its documentation and README file.
+
+Controller Helper Methods
+-------------------------
+
+Here's a comprehensive list of helper methods available in Blix::Rest controllers:
+
+- `add_headers`: Add headers to the response
+- `after`: After hook
+- `allow_methods`: Allow non-standard HTTP verbs in the controller
+- `asset_path`: Get the path for an asset
+- `asset_tag`: Generate an HTML tag for an asset
+- `auth_error`: Raise an authentication error
+- `before`: Before hook
+- `before_route`: Before route hook
+- `body`: The request body as a string
+- `body_hash`: The request body parsed as a hash
+- `env`: The request environment hash
+- `escape_javascript`: Escape a JavaScript string
+- `format`: The response format (:json or :html)
+- `form_hash`: Returns a hash of form data from POST requests
+- `get_basic_auth`: Get basic authentication credentials
+- `get_cookie`: Get the value of a cookie
+- `get_data`: Get a field from the request body's data hash
+- `get_session_id`: Get or create a session ID
+- `h`: Escape HTML string to avoid XSS
+- `logger`: System logger
+- `method`: The request method (lowercase, e.g., 'get', 'post')
+- `mode_development?`: Check if in development mode
+- `mode_production?`: Check if in production mode
+- `mode_test?`: Check if in test mode
+- `params`: All parameters combined
+- `path`: The request path
+- `path_for`: Give the external path for an internal path
+- `path_params`: A hash of parameters constructed from variable parts of the path
+- `post_params`: A hash of parameters passed in the request body
+- `proxy`: Forward the call to another service
+- `query_params`: A hash of URL query parameters
+- `rate_limit`: Apply rate limiting to a block of code
+- `redirect`: Redirect to another URL
+- `refresh_session_id`: Generate a new session ID
+- `render_erb`: Render an ERB template
+- `req`: The Rack request object
+- `request_ip`: The IP address of the request
+- `send_data`: Send raw data with various options
+- `send_error`: Send an error response
+- `server_cache`: Get the server cache object
+- `server_cache_get`: Retrieve/store value in cache
+- `server_options`: Options passed to the server at creation time
+- `session`: Access to the session object
+- `set_accept_cors`: Set CORS headers for the response
+- `set_status`: Set the HTTP response status
+- `store_cookie`: Store a cookie in the response
+- `url_for`: Give the full URL for an internal path
+- `user`: The user making this request (or nil if not authenticated)
+- `verb`: The HTTP verb of the request (uppercase, e.g., 'GET', 'POST')
 
 
-The asset manager stores a hash of the asset data and the current unique file suffix for each asset in its own file.
-This config file is stored in a config directory. The default is 'config/assets' but another location can be specified.
-
-
-    Blix::AssetManager.config_dir = "myassets/config/location"   # defaults to `"config/assets"`
-
-
-### Compile your assets
-
-    require 'blix/assets'
-
-    ......
-    ......
-    ASSETS = ['admin.js', 'admin.css', 'standard.js']
-    ASSETS.each do |name|
-
-       compiled_asset = environment[name].to_s
-
-       Blix::AssetManager.if_modified(name,compiled_asset,:rewrite=>true) do |a|
-
-         filename = File.join(ROOT,"public","assets",a.newname)
-         puts "writing #{name} to #{filename}"
-         File.write filename,compiled_asset
-
-         File.unlink File.join(ROOT,"public","assets",a.oldname) if a.oldname
-       end
-
-    end
-
-
-### In your erb view
-
-
-eg:
-
-    require 'blix/assets'
-
-    ........
-
-    <script src="<%= asset_path('assets/standard.js') %>" type="text/javascript"></script>
-
-or
-
-    <%= asset_tag('/assets/standard.js') %>
-
-
-### or in your controller
-
-eg:
-
-    require 'blix/assets'
-
-    ........
-
-    path = asset_path('assets/standard.js')
-
-
-
-#### NOTE ON ASSETS!!
-
-In production mode the compiled version of the assets will be used which will have a unique file name.
-
-In production the expiry date of your assets can be set to far in the future to take advantage of cacheing.
-
-In development or test mode the standard name will be used which then will make use of your asset pipeline ( eg sprockets )
-
-Asset names can contain only one extension. if there are more extensions eg: 'myfile.extra.css' then only the last
-extension will be used: in this case the name will be simplified to 'myfile.css' !!!

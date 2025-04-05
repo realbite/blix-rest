@@ -3,25 +3,17 @@
 module Blix::Rest
   class Server
 
-    def initialize(opts = {})
+    def initialize(options = {})
       @_parsers = {}
       @_mime_types = {}
-
-      # register the default parsers and any passed in as options.
-
-      register_parser('html', HtmlFormatParser.new)
-      register_parser('json', JsonFormatParser.new)
-      register_parser('xml', XmlFormatParser.new)
-      register_parser('raw', RawFormatParser.new)
-      extract_parsers_from_options(opts)
-      @_options = opts
+      @_options = options
+      setup_parsers(options)
     end
 
     # options passed to the server
     def _options
       @_options
     end
-
 
     # the object serving as a cache
     def _cache
@@ -36,16 +28,15 @@ module Blix::Rest
       end
     end
 
-    def extract_parsers_from_options(opts)
-      opts.each do |k, v|
-        next unless k =~ /^(\w*)_parser&/
+    def extract_parsers_from_options(options)
+      options.each do |k, v|
+        next unless k =~ /^(\w*)_parser$/
 
         format = Regexp.last_match(1)
         parser = v
         register_parser(format, parser)
       end
     end
-
     def set_custom_headers(format, headers)
       parser = get_parser(format)
       raise "parser not found for custom headers format=>#{format}" unless parser
@@ -61,7 +52,7 @@ module Blix::Rest
     end
 
     def register_parser(format, parser)
-      raise "#{k} must be an object with parent class Blix::Rest::FormatParser" unless parser.is_a?(FormatParser)
+      raise "#{format} must be an object with parent class Blix::Rest::FormatParser" unless parser.is_a?(FormatParser)
 
       parser._format = format
       @_parsers[format.to_s.downcase] = parser
@@ -71,7 +62,7 @@ module Blix::Rest
     # retrieve parameters from the http request
     def retrieve_params(env)
       post_params = {}
-      body        = ''
+      body = ''
       params = env['params'] || {}
       params.merge!(::Rack::Utils.parse_nested_query(env['QUERY_STRING']))
 
@@ -85,19 +76,15 @@ module Blix::Rest
             post_params = {}
           else
             begin
-              post_params = case (env['CONTENT_TYPE'])
+              post_params = case env['CONTENT_TYPE']
                             when URL_ENCODED
                               ::Rack::Utils.parse_nested_query(body)
-                            when JSON_ENCODED then
+                            when JSON_ENCODED
                               json = MultiJson.load(body)
-                              if json.is_a?(Hash)
-                                json
-                              else
-                                { '_json' => json }
-                              end
+                              json.is_a?(Hash) ? json : { '_json' => json }
                             else
                               {}
-              end
+                            end
             rescue StandardError => e
               raise BadRequestError, "Invalid parameters: #{e.class}"
             end
@@ -124,13 +111,22 @@ module Blix::Rest
       case mime
       when 'application/json' then :json
       when 'text/html' then :html
-      when 'application/xml'  then :xml
+      when 'application/xml' then :xml
       when 'application/xhtml+xml' then :xhtml
       when '*/*' then :*
       end
     end
 
-    # attempt to handle mjltiple accept formats here..
+    def setup_parsers(options)
+      # Register default parsers
+      register_parser('html', HtmlFormatParser.new)
+      register_parser('json', JsonFormatParser.new)
+      register_parser('xml', XmlFormatParser.new)
+      register_parser('raw', RawFormatParser.new)
+      extract_parsers_from_options(options)
+    end
+
+    # attempt to handle multiple accept formats here..
     # mime can include '.../*' and '*/*'
     # FIXME
     def get_format_new(env, options)
@@ -156,23 +152,22 @@ module Blix::Rest
 
     # the call function is the interface with the rack framework
     def call(env)
-      t1  = Time.now
+      t1 = Time.now
       req = Rack::Request.new(env)
 
-      verb  = env['REQUEST_METHOD']
-      path  = req.path
-      path  = CGI.unescape(path) unless _options[:unescape] == false
+      verb = env['REQUEST_METHOD']
+      path = req.path
+      path = CGI.unescape(path) unless _options[:unescape] == false
 
       blk, path_params, options, is_wild = RequestMapper.match(verb, path)
 
       match_all = RequestMapper.match('ALL', path) unless blk && !is_wild
-      blk, path_params, options = match_all if match_all && match_all[0] # override
-
+      blk, path_params, options = match_all if match_all && match_all[0]
 
       default_format = options && options[:default] && options[:default].to_sym
       force_format = options && options[:force] && options[:force].to_sym
-      do_cache     = options && options[:cache] && !Blix::Rest.cache_disabled
-      clear_cache  = options && options[:cache_reset]
+      do_cache = options && options[:cache] && !Blix::Rest.cache_disabled
+      clear_cache = options && options[:cache_reset]
 
       query_format = options && options[:query] && req.GET['format'] && req.GET['format'].to_sym
 
@@ -190,55 +185,59 @@ module Blix::Rest
 
       parser._options = options
 
-      # check for cached response end return with cached response if found.
-      #
-      if do_cache && ( response = _cache["#{verb}|#{format}|#{path}"] )
+      # check for cached response and return with cached response if found.
+      if do_cache && (response = _cache["#{verb}|#{format}|#{path}"])
         return [response.status, response.headers.merge('x-blix-cache' => 'cached'), response.content]
       end
 
       response = Response.new
 
       if blk
-
         begin
           params = env['params']
           context = Context.new(path_params, params, req, format, response, verb, self)
-          value  = blk.call(context)
+          value, response_options = blk.call(context)
         rescue ServiceError => e
-          set_default_headers(parser,response)
+          set_default_headers(parser, response)
           response.set(e.status, parser.format_error(e.message), e.headers)
-          ::Blix::Rest.logger <<  e.message if $VERBOSE
+          logger << e.message if $VERBOSE
         rescue RawResponse => e
           value = e.content
-          value = [value.to_s] unless value.respond_to?(:each) ||  value.respond_to?(:call)
-          response.status  = e.status if e.status
+          value = [value.to_s] unless value.respond_to?(:each) || value.respond_to?(:call)
+          response.status = e.status if e.status
           response.content = value
           response.headers.merge!(e.headers) if e.headers
         rescue AuthorizationError => e
-          set_default_headers(parser,response)
+          set_default_headers(parser, response)
           response.set(401, parser.format_error(e.message), AUTH_HEADER => "#{e.type} realm=\"#{e.realm}\", charset=\"UTF-8\"")
         rescue Exception => e
-          set_default_headers(parser,response)
+          set_default_headers(parser, response)
           response.set(500, parser.format_error('internal error'))
-          ::Blix::Rest.logger <<  "----------------------------\n#{$!}\n----------------------------"
-          ::Blix::Rest.logger <<  "----------------------------\n#{$@}\n----------------------------"
+          logger << e.message
+          logger << e.backtrace.join("\n")
         else # no error
-          set_default_headers(parser,response)
-          parser.format_response(value, response)
+          response_options ||= {}
+          response.set_options(response_options)
+          if response_options[:raw]
+            response.content = value
+          else
+            set_default_headers(parser, response)
+            parser.format_response(value, response)
+          end
           # cache response if requested
           _cache.clear if clear_cache
           _cache["#{verb}|#{format}|#{path}"] = response if do_cache
         end
-
       else
-        set_default_headers(parser,response)
+        set_default_headers(parser, response)
         response.set(404, parser.format_error('Invalid Url'))
       end
-      Blix::Rest.logger.info "#{verb} #{path} total time=#{((Time.now-t1)*1000).round(2)}ms" if $VERBOSE || $DEBUG
+
+      logger << "#{verb} #{path} total time=#{((Time.now - t1) * 1000).round(2)}ms"
       [response.status.to_i, response.headers, response.content]
     end
 
-    def set_default_headers(parser,response)
+    def set_default_headers(parser, response)
       if parser.__custom_headers
         response.headers.merge! parser.__custom_headers
       else
@@ -246,5 +245,10 @@ module Blix::Rest
       end
     end
 
+    private
+
+    def logger
+      Blix::Rest.logger
+    end
   end
 end

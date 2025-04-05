@@ -14,8 +14,9 @@ module Blix::Rest
     PATH_SEP         = '/'
     STAR_PLACEHOLDER = '*'
 
-    # the
-
+    # the TableNode class is used to build a tree structure to
+    # represent the routes.
+    #
     class TableNode
 
       attr_accessor :blk
@@ -27,19 +28,7 @@ module Blix::Rest
 
       def initialize(name)
         @children = {}
-        if name[0, 1] == ':'
-          @parameter = name[1..-1].to_sym
-          @value     = WILD_PLACEHOLDER
-        elsif name[0, 1] == '*'
-          @parameter = if name[1..-1].empty?
-                         :wildpath
-                       else
-                         name[1..-1].to_sym
-                       end
-          @value = STAR_PLACEHOLDER
-        else
-          @value = name
-        end
+        @value, @parameter = parse_name(name)
         @extract_format = true
       end
 
@@ -51,6 +40,19 @@ module Blix::Rest
         @children[k] = v
       end
 
+      private
+
+      def parse_name(name)
+        case name[0]
+        when ':'
+          [WILD_PLACEHOLDER, name[1..].to_sym]
+        when '*'
+          [STAR_PLACEHOLDER, name[1..].empty? ? :wildpath : name[1..].to_sym]
+        else
+          [name, nil]
+        end
+      end
+
     end
 
     class << self
@@ -58,18 +60,20 @@ module Blix::Rest
       # the root always starts with '/' and finishes with '/'
       def set_path_root(root)
         root = root.to_s
-        root = '/' + root if root[0, 1] != '/'
-        root += '/' if root[-1, 1] != '/'
+        root = '/' + root unless root.start_with?('/')
+        root += '/' unless root.end_with?('/')
         @path_root = root
         @path_root_length = @path_root.length - 1
       end
 
+      # if the path_root has not been set then return '/'
       def path_root
         @path_root || '/'
       end
 
+      # return 0 if the path_root has not been set   
       def path_root_length
-        @path_root_length.to_i
+        @path_root_length || 0
       end
 
       def full_path(path)
@@ -325,21 +329,25 @@ module Blix::Rest
         end
         str
       end
-
     end
 
   end # RequestMapper
 
-  def self.set_path_root(*args)
-    RequestMapper.set_path_root(*args)
-  end
+  class << self
 
-  def self.path_root
-    RequestMapper.path_root
-  end
 
-  def self.full_path(path)
-    RequestMapper.full_path(path)
+    def set_path_root(*args)
+      RequestMapper.set_path_root(*args)
+    end
+
+    def path_root
+      RequestMapper.path_root
+    end
+
+    def full_path(path)
+      RequestMapper.full_path(path)
+    end
+
   end
 
   RequestMapper.set_path_root(ENV['BLIX_REST_ROOT']) if ENV['BLIX_REST_ROOT']

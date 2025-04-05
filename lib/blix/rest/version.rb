@@ -1,5 +1,5 @@
 module Blix
   module Rest
-    VERSION = "0.10.4"
+    VERSION = "0.11.1"
   end
 end

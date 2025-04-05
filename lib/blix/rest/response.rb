@@ -26,5 +26,11 @@ module Blix::Rest
       @headers.merge!(headers) if headers
     end
 
+    def set_options(options={})
+      @status = options[:status].to_i if options[:status]
+      @headers.merge!(options[:headers]) if options[:headers]
+      @headers['content-type'] = options[:content_type] if options[:content_type]
+    end
+
   end
 end
